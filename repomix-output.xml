@@ -650,91 +650,6 @@ describe('jwtInterceptor', () => {
 
 </file>
 
-<file path="frontend/src/app/core/models/review.model.ts">
-/**
- * Coincide con las respuestas de ReviewController (/api/reviews) del
- * API Contract v1.0.
- */
-
-export interface ReviewFeedUser {
-  id: string;
-  username: string;
-  photoUrl?: string;
-  /**
-   * ⚠️ El contrato NO retorna este campo dentro de "user" en
-   * GET /api/reviews/feed. Se deja opcional y se asume `true` mientras
-   * no venga explícito, porque el feed "Siguiendo" en teoría solo trae
-   * reseñas de gente que ya sigues. Si el backend llega a exponerlo,
-   * esto ya queda listo para leerlo.
-   */
-  isFollowedByMe?: boolean;
-}
-
-export interface Review {
-  id: string;
-  user: ReviewFeedUser;
-  /**
-   * ⚠️ No viene en la respuesta de GET /api/reviews/feed según el
-   * contrato v1.0 (solo trae albumName/artistName/coverUrl). Sin este
-   * id no se puede armar el link real a "Ver álbum" (GET
-   * /api/spotify/albums/{spotifyAlbumId}). Hay que pedirle a Alexis que
-   * lo agregue a la respuesta del feed.
-   */
-  spotifyAlbumId?: string;
-  albumName: string;
-  artistName: string;
-  coverUrl?: string;
-  rating: number;
-  content: string;
-  likesCount: number;
-  likedByMe?: boolean;
-  createdAt: string;
-  updatedAt?: string;
-}
-
-export interface FeedResponse {
-  reviews: Review[];
-  page: number;
-  hasMore: boolean;
-}
-
-export interface AlbumReviewsResponse {
-  reviews: Review[];
-  averageRating: number;
-  totalReviews: number;
-}
-
-export interface LikeResponse {
-  liked: boolean;
-  likesCount: number;
-}
-
-export type ReportReason =
-  | 'SPAM'
-  | 'OFFENSIVE_LANGUAGE'
-  | 'FALSE_CONTENT'
-  | 'HARASSMENT'
-  | 'OTHER';
-
-export interface MissionCompletedInfo {
-  name: string;
-  pointsEarned: number;
-}
-
-export interface CreateReviewPayload {
-  spotifyAlbumId: string;
-  albumName: string;
-  artistName: string;
-  coverUrl: string;
-  rating: number;
-  content: string;
-}
-
-export interface CreateReviewResponse extends Review {
-  missionCompleted?: MissionCompletedInfo;
-}
-</file>
-
 <file path="frontend/src/app/core/services/album.spec.ts">
 import { TestBed } from '@angular/core/testing';
 
@@ -855,78 +770,6 @@ describe('Review', () => {
     expect(service).toBeTruthy();
   });
 });
-</file>
-
-<file path="frontend/src/app/core/services/review.ts">
-import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
-import {
-  AlbumReviewsResponse,
-  CreateReviewPayload,
-  CreateReviewResponse,
-  FeedResponse,
-  LikeResponse,
-  ReportReason,
-  Review,
-} from '../models/review.model';
-
-/**
- * Todas las rutas de este servicio requieren JWT (según el contrato).
- * El token se agrega automáticamente por jwtInterceptor a cualquier
- * request cuya URL contenga "/api/", así que aquí no hay que tocar
- * headers manualmente.
- */
-@Injectable({
-  providedIn: 'root',
-})
-export class ReviewService {
-  private baseUrl = 'http://localhost:8080/api/reviews';
-
-  constructor(private http: HttpClient) {}
-
-  // GET /api/reviews/feed - feed paginado (usuarios seguidos)
-  getFeed(page = 0): Observable<FeedResponse> {
-    return this.http.get<FeedResponse>(`${this.baseUrl}/feed`, {
-      params: { page },
-    });
-  }
-
-  // GET /api/reviews/album/{spotifyAlbumId}
-  getAlbumReviews(spotifyAlbumId: string): Observable<AlbumReviewsResponse> {
-    return this.http.get<AlbumReviewsResponse>(`${this.baseUrl}/album/${spotifyAlbumId}`);
-  }
-
-  // GET /api/reviews/{id}
-  getById(id: string): Observable<Review> {
-    return this.http.get<Review>(`${this.baseUrl}/${id}`);
-  }
-
-  // POST /api/reviews
-  create(payload: CreateReviewPayload): Observable<CreateReviewResponse> {
-    return this.http.post<CreateReviewResponse>(this.baseUrl, payload);
-  }
-
-  // PUT /api/reviews/{id} - solo el dueño
-  update(id: string, payload: { rating: number; content: string }): Observable<Review> {
-    return this.http.put<Review>(`${this.baseUrl}/${id}`, payload);
-  }
-
-  // DELETE /api/reviews/{id} - solo el dueño
-  delete(id: string): Observable<{ message: string }> {
-    return this.http.delete<{ message: string }>(`${this.baseUrl}/${id}`);
-  }
-
-  // POST /api/reviews/{id}/like - toggle (like/unlike)
-  toggleLike(id: string): Observable<LikeResponse> {
-    return this.http.post<LikeResponse>(`${this.baseUrl}/${id}/like`, {});
-  }
-
-  // POST /api/reviews/{id}/report
-  report(id: string, reason: ReportReason): Observable<{ message: string }> {
-    return this.http.post<{ message: string }>(`${this.baseUrl}/${id}/report`, { reason });
-  }
-}
 </file>
 
 <file path="frontend/src/app/core/services/user.spec.ts">
@@ -1592,546 +1435,6 @@ import { Component } from '@angular/core';
 export class Explore {}
 </file>
 
-<file path="frontend/src/app/modules/listener/feed/feed.html">
-<!--
-  Esta plantilla es SOLO el contenido "main" + rail de la vista Feed/Inicio
-  (VISTA 2 del mockup). La sidebar es un componente aparte que envolverá
-  esta vista dentro de un layout tipo:
-
-  <div class="app">
-    <app-sidebar></app-sidebar>
-    <router-outlet></router-outlet>  <-- aquí se monta este componente
-  </div>
--->
-<div class="feed-layout">
-  <main class="main">
-    <div class="topbar">
-      <div class="topbar-row">
-        <h1>Inicio</h1>
-        <div class="search-wrap">
-          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="11" cy="11" r="7" />
-            <path d="M21 21l-4.3-4.3" />
-          </svg>
-          <input type="text" placeholder="Buscar álbumes, artistas o usuarios…" />
-        </div>
-        <button class="icon-btn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M18 8a6 6 0 10-12 0c0 5-2 6-2 6h16s-2-1-2-6z" />
-            <path d="M9.5 20a2.5 2.5 0 005 0" />
-          </svg>
-          <span class="dot-alert"></span>
-        </button>
-        <div class="avatar-sm"></div>
-      </div>
-      <div class="feed-tabs">
-        <div class="feed-tab" [class.active]="activeTab === 'following'" (click)="selectTab('following')">
-          Siguiendo
-        </div>
-        <div class="feed-tab" [class.active]="activeTab === 'trending'" (click)="selectTab('trending')">
-          Tendencias
-        </div>
-        <div class="feed-tab" [class.active]="activeTab === 'new-releases'" (click)="selectTab('new-releases')">
-          Nuevos lanzamientos
-        </div>
-      </div>
-    </div>
-
-    <div class="feed">
-      <div class="suggest-banner">
-        <div class="ic">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="8" r="4" />
-            <path d="M4 21c0-4 3.5-7 8-7s8 3 8 7" />
-            <path d="M19 8v6M16 11h6" />
-          </svg>
-        </div>
-        <div class="txt">
-          <strong>Tu feed está un poco vacío</strong>
-          <p>Sigue a más oyentes y artistas para llenarlo de reseñas.</p>
-        </div>
-        <button class="cta">Buscar a quién seguir</button>
-      </div>
-
-      <ng-container *ngIf="activeTab === 'following'; else pendingTab">
-        <div class="feed-status" *ngIf="loading">Cargando tu feed…</div>
-        <div class="feed-status error" *ngIf="!loading && errorMessage">{{ errorMessage }}</div>
-        <div class="feed-status" *ngIf="!loading && !errorMessage && reviews.length === 0">
-          Aún no hay reseñas en tu feed. Sigue a otros oyentes o artistas para verlas aquí.
-        </div>
-
-        <app-review-card *ngFor="let review of reviews" [review]="review"></app-review-card>
-
-        <div class="pagination" *ngIf="!loading && !errorMessage && reviews.length > 0">
-          <button class="page-btn page-arrow" [disabled]="page === 0" (click)="goToPage(page - 1)">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <path d="M15 18l-6-6 6-6" />
-            </svg>
-          </button>
-          <button
-            *ngFor="let n of pageNumbers"
-            class="page-btn"
-            [class.active]="n === page"
-            (click)="goToPage(n)"
-          >
-            {{ n + 1 }}
-          </button>
-          <button class="page-btn page-arrow" [disabled]="!hasMore" (click)="goToPage(page + 1)">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <path d="M9 18l6-6-6-6" />
-            </svg>
-          </button>
-        </div>
-      </ng-container>
-
-      <ng-template #pendingTab>
-        <div class="feed-status">
-          Esta pestaña todavía no tiene un endpoint definido en el API Contract v1.0. Próximamente.
-        </div>
-      </ng-template>
-    </div>
-  </main>
-
-  <!-- Rail: contenido de referencia visual del mockup. Misiones y Tendencias
-       quedan pendientes de MissionController y de un endpoint de géneros;
-       por ahora es solo maquetación fiel al mockup, sin datos reales. -->
-  <aside class="rail">
-    <div class="rail-card">
-      <h3>Misiones de hoy <a>Ver todas</a></h3>
-      <div class="mission-row">
-        <div class="mission-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 19V5M5 12l7-7 7 7" />
-          </svg>
-        </div>
-        <div class="mission-info">
-          <div class="mname">Escribe 1 reseña</div>
-          <div class="mission-bar"><span style="width: 60%"></span></div>
-        </div>
-        <div class="mission-pts">+20</div>
-      </div>
-      <div class="mission-row">
-        <div class="mission-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path
-              d="M12 21s-7-4.5-9.5-9C.7 8.6 2 5 5.4 5c2 0 3.3 1.2 4 2.1.7-.9 2-2.1 4-2.1 3.4 0 4.7 3.6 2.9 7-2.5 4.5-9.5 9-9.5 9z"
-            />
-          </svg>
-        </div>
-        <div class="mission-info">
-          <div class="mname">Da like a 5 reseñas</div>
-          <div class="mission-bar"><span style="width: 80%"></span></div>
-        </div>
-        <div class="mission-pts">+10</div>
-      </div>
-      <div class="mission-row">
-        <div class="mission-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="8" r="4" />
-            <path d="M4 21c0-4 3.5-7 8-7s8 3 8 7" />
-          </svg>
-        </div>
-        <div class="mission-info">
-          <div class="mname">Sigue a 1 artista nuevo</div>
-          <div class="mission-bar"><span style="width: 0%"></span></div>
-        </div>
-        <div class="mission-pts">+15</div>
-      </div>
-    </div>
-
-    <div class="rail-card">
-      <h3>Tendencias</h3>
-      <div>
-        <span class="genre-pill">Reggaetón <span class="n">2.3k</span></span>
-        <span class="genre-pill">Synth-pop LATAM <span class="n">1.1k</span></span>
-        <span class="genre-pill">Cumbia <span class="n">980</span></span>
-        <span class="genre-pill">Indie folk <span class="n">740</span></span>
-        <span class="genre-pill">Trap en español <span class="n">615</span></span>
-      </div>
-    </div>
-
-    <div class="rail-card premium-banner">
-      <h3>Oyente Premium</h3>
-      <p>Sin anuncios, estadísticas avanzadas de tu gusto musical y acceso anticipado a nuevas funciones.</p>
-      <a class="cta" routerLink="/plans">Ver planes</a>
-    </div>
-  </aside>
-</div>
-</file>
-
-<file path="frontend/src/app/modules/listener/feed/feed.scss">
-:host {
-  --bg: #0a1128;
-  --accent: #17d1e8;
-  --accent-2: #9b5de5;
-  --text: #ffffff;
-  --text-secondary: #8f9cae;
-  --card: #131c38;
-  --card-border: rgba(143, 156, 174, 0.14);
-  --accent-glow: rgba(23, 209, 232, 0.25);
-  --danger: #f15f6c;
-  --success: #2ee89a;
-
-  display: block;
-  font-family: 'Inter', sans-serif;
-  color: var(--text);
-}
-
-h1,
-h2,
-h3 {
-  font-family: 'Space Grotesk', sans-serif;
-}
-
-/* ===== LAYOUT (main + rail, sin la columna de sidebar) ===== */
-.feed-layout {
-  display: grid;
-  grid-template-columns: 1fr 320px;
-  max-width: 1264px;
-  margin: 0 auto;
-  min-height: 100vh;
-}
-@media (max-width: 960px) {
-  .feed-layout {
-    grid-template-columns: 1fr;
-  }
-  .rail {
-    border-left: none;
-    border-top: 1px solid var(--card-border);
-  }
-}
-
-.main {
-  min-height: 100vh;
-  background: radial-gradient(circle at 85% -5%, rgba(23, 209, 232, 0.08), transparent 45%), var(--bg);
-}
-
-/* ===== TOPBAR ===== */
-.topbar {
-  position: sticky;
-  top: 0;
-  z-index: 5;
-  background: rgba(10, 17, 40, 0.85);
-  backdrop-filter: blur(10px);
-  padding: 18px 28px;
-  border-bottom: 1px solid var(--card-border);
-}
-.topbar-row {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-.topbar h1 {
-  font-size: 20px;
-  font-weight: 700;
-  flex-shrink: 0;
-}
-.search-wrap {
-  flex: 1;
-  position: relative;
-}
-.search-wrap input {
-  width: 100%;
-  background: var(--card);
-  border: 1px solid var(--card-border);
-  border-radius: 24px;
-  padding: 10px 16px 10px 40px;
-  font-size: 13.5px;
-  color: var(--text);
-  font-family: inherit;
-}
-.search-wrap input::placeholder {
-  color: var(--text-secondary);
-}
-.search-wrap input:focus {
-  outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-glow);
-}
-.search-icon {
-  position: absolute;
-  left: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 15px;
-  height: 15px;
-  color: var(--text-secondary);
-}
-.icon-btn {
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--card);
-  border: 1px solid var(--card-border);
-  flex-shrink: 0;
-  position: relative;
-}
-.icon-btn svg {
-  width: 17px;
-  height: 17px;
-  color: var(--text-secondary);
-}
-.icon-btn:hover svg {
-  color: var(--text);
-}
-.dot-alert {
-  position: absolute;
-  top: 8px;
-  right: 9px;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--accent);
-  box-shadow: 0 0 6px var(--accent);
-}
-.avatar-sm {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #3a4a78, #1b2750);
-  flex-shrink: 0;
-  border: 1.5px solid rgba(23, 209, 232, 0.4);
-}
-.feed-tabs {
-  display: flex;
-  gap: 22px;
-  margin-top: 16px;
-}
-.feed-tab {
-  font-size: 13.5px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  padding-bottom: 10px;
-  border-bottom: 2px solid transparent;
-  cursor: pointer;
-}
-.feed-tab.active {
-  color: var(--text);
-  border-color: var(--accent);
-}
-
-/* ===== FEED ===== */
-.feed {
-  padding: 22px 28px 60px;
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
-.feed-status {
-  text-align: center;
-  font-size: 13.5px;
-  color: var(--text-secondary);
-  padding: 24px 0;
-}
-.feed-status.error {
-  color: var(--danger);
-}
-.suggest-banner {
-  background: var(--card);
-  border: 1px solid var(--card-border);
-  border-radius: 16px;
-  padding: 16px 18px;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-.suggest-banner .ic {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: rgba(23, 209, 232, 0.1);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-.suggest-banner .ic svg {
-  width: 20px;
-  height: 20px;
-  color: var(--accent);
-}
-.suggest-banner .txt {
-  flex: 1;
-}
-.suggest-banner .txt strong {
-  font-size: 14px;
-}
-.suggest-banner .txt p {
-  font-size: 12.5px;
-  color: var(--text-secondary);
-  margin-top: 3px;
-}
-.suggest-banner .cta {
-  background: var(--accent);
-  color: var(--bg);
-  font-weight: 700;
-  font-size: 12.5px;
-  padding: 9px 16px;
-  border-radius: 10px;
-  white-space: nowrap;
-  flex-shrink: 0;
-  border: none;
-  cursor: pointer;
-}
-.pagination {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 8px 0 20px;
-}
-.page-btn {
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  background: var(--card);
-  border: 1px solid var(--card-border);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.page-btn.active {
-  background: var(--accent);
-  color: var(--bg);
-  border-color: var(--accent);
-}
-.page-btn:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
-.page-btn svg {
-  width: 16px;
-  height: 16px;
-}
-
-/* ===== RIGHT RAIL ===== */
-.rail {
-  padding: 24px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  border-left: 1px solid var(--card-border);
-}
-.rail-card {
-  background: var(--card);
-  border: 1px solid var(--card-border);
-  border-radius: 14px;
-  padding: 16px;
-}
-.rail-card h3 {
-  font-size: 13.5px;
-  font-weight: 700;
-  margin-bottom: 12px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.rail-card h3 a {
-  font-size: 11.5px;
-  color: var(--accent);
-  font-weight: 500;
-  cursor: pointer;
-}
-.mission-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 12px;
-}
-.mission-row:last-child {
-  margin-bottom: 0;
-}
-.mission-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  background: rgba(23, 209, 232, 0.1);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-.mission-icon svg {
-  width: 16px;
-  height: 16px;
-  color: var(--accent);
-}
-.mission-info {
-  flex: 1;
-  min-width: 0;
-}
-.mname {
-  font-size: 12.5px;
-  font-weight: 500;
-  margin-bottom: 5px;
-}
-.mission-bar {
-  height: 4px;
-  background: rgba(143, 156, 174, 0.15);
-  border-radius: 4px;
-  overflow: hidden;
-}
-.mission-bar span {
-  display: block;
-  height: 100%;
-  background: var(--accent);
-  border-radius: 4px;
-}
-.mission-pts {
-  font-size: 11.5px;
-  font-weight: 700;
-  color: var(--accent);
-  font-family: 'JetBrains Mono', monospace;
-  flex-shrink: 0;
-}
-.genre-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  padding: 7px 12px;
-  border-radius: 20px;
-  background: rgba(143, 156, 174, 0.08);
-  border: 1px solid var(--card-border);
-  margin: 0 6px 8px 0;
-  cursor: pointer;
-}
-.genre-pill .n {
-  color: var(--text-secondary);
-  font-weight: 500;
-}
-.genre-pill:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-.premium-banner {
-  background: linear-gradient(150deg, #0d1a3d, #131c38 60%);
-  border: 1px solid rgba(23, 209, 232, 0.3);
-}
-.premium-banner p {
-  font-size: 12px;
-  color: var(--text-secondary);
-  line-height: 1.5;
-  margin-bottom: 12px;
-}
-.premium-banner .cta {
-  display: inline-block;
-  font-size: 12.5px;
-  font-weight: 700;
-  color: var(--bg);
-  background: var(--accent);
-  padding: 9px 16px;
-  border-radius: 10px;
-}
-</file>
-
 <file path="frontend/src/app/modules/listener/feed/feed.spec.ts">
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
@@ -2155,96 +1458,6 @@ describe('Feed', () => {
     expect(component).toBeTruthy();
   });
 });
-</file>
-
-<file path="frontend/src/app/modules/listener/feed/feed.ts">
-import { Component, OnDestroy, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
-import { Subscription } from 'rxjs';
-import { ReviewCard } from '../../../shared/review-card/review-card';
-import { ReviewService } from '../../../core/services/review';
-import { Review } from '../../../core/models/review.model';
-import { AuthService } from '../../../core/services/auth';
-
-type FeedTab = 'following' | 'trending' | 'new-releases';
-
-@Component({
-  selector: 'app-feed',
-  standalone: true,
-  imports: [CommonModule, RouterModule, ReviewCard],
-  templateUrl: './feed.html',
-  styleUrl: './feed.scss',
-})
-export class Feed implements OnInit, OnDestroy {
-  reviews: Review[] = [];
-  loading = true;
-  errorMessage: string | null = null;
-  page = 0;
-  hasMore = false;
-
-  activeTab: FeedTab = 'following';
-
-  private userSub?: Subscription;
-
-  constructor(
-    private reviewService: ReviewService,
-    private authService: AuthService,
-  ) {}
-
-  ngOnInit(): void {
-    // Aseguramos que haya un usuario cargado (por si se entra directo a
-    // /listener/feed con un token en localStorage pero sin pasar por login).
-    this.userSub = this.authService.currentUser$.subscribe();
-    this.loadFeed(0);
-  }
-
-  ngOnDestroy(): void {
-    this.userSub?.unsubscribe();
-  }
-
-  selectTab(tab: FeedTab): void {
-    this.activeTab = tab;
-    if (tab === 'following') {
-      this.loadFeed(0);
-    }
-    // "Tendencias" y "Nuevos lanzamientos" no tienen endpoint todavía en el
-    // API Contract v1.0 (solo existe GET /api/reviews/feed). Se dejan las
-    // pestañas visibles para respetar el mockup, pero sin datos reales
-    // hasta que el backend defina esas rutas.
-  }
-
-  loadFeed(page: number): void {
-    this.loading = true;
-    this.errorMessage = null;
-    this.reviewService.getFeed(page).subscribe({
-      next: (res) => {
-        this.reviews = res.reviews;
-        this.page = res.page;
-        this.hasMore = res.hasMore;
-        this.loading = false;
-      },
-      error: () => {
-        this.errorMessage = 'No pudimos cargar tu feed. Intenta de nuevo.';
-        this.loading = false;
-      },
-    });
-  }
-
-  goToPage(page: number): void {
-    if (page < 0) return;
-    if (page > this.page && !this.hasMore) return;
-    this.loadFeed(page);
-  }
-
-  get pageNumbers(): number[] {
-    // La API solo retorna hasMore (no un total de páginas), así que
-    // mostramos la página actual y, si hay más, la siguiente conocida.
-    const nums = [this.page];
-    if (this.hasMore) nums.push(this.page + 1);
-    return nums;
-  }
-}
 </file>
 
 <file path="frontend/src/app/modules/listener/genre-view/genre-view.html">
@@ -2639,306 +1852,6 @@ import { Component } from '@angular/core';
 export class Navbar {}
 </file>
 
-<file path="frontend/src/app/shared/review-card/review-card.html">
-<article class="review-card">
-  <div class="review-head">
-    <div
-      class="avatar-sm"
-      [style.background-image]="review.user.photoUrl ? 'url(' + review.user.photoUrl + ')' : null"
-    ></div>
-    <div class="meta">
-      <div class="uname">{{ review.user.username }}</div>
-      <div class="when">{{ timeAgo }}</div>
-    </div>
-    <button
-      class="follow-pill"
-      [class.following]="isFollowing"
-      [disabled]="followInFlight"
-      (click)="toggleFollow()"
-    >
-      {{ isFollowing ? 'Siguiendo' : 'Seguir' }}
-    </button>
-  </div>
-
-  <div class="review-body">
-    <div class="album-art-wrap">
-      <div class="vinyl-peek"></div>
-      <img *ngIf="review.coverUrl" class="album-art" [src]="review.coverUrl" [alt]="review.albumName" />
-      <div *ngIf="!review.coverUrl" class="album-art-placeholder">
-        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="rgba(143,156,174,0.3)" stroke-width="1.5">
-          <circle cx="12" cy="12" r="10" />
-          <circle cx="12" cy="12" r="3" />
-        </svg>
-      </div>
-    </div>
-    <div class="review-content">
-      <div class="album-title">{{ review.albumName }}</div>
-      <div class="album-artist">{{ review.artistName }}</div>
-      <app-star-rating [rating]="review.rating"></app-star-rating>
-      <p class="review-text">{{ review.content }}</p>
-    </div>
-  </div>
-
-  <div class="review-footer">
-    <div class="footer-action" [class.liked]="review.likedByMe" (click)="toggleLike()">
-      <svg viewBox="0 0 24 24" [attr.fill]="review.likedByMe ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2">
-        <path d="M12 21s-7-4.5-9.5-9C.7 8.6 2 5 5.4 5c2 0 3.3 1.2 4 2.1.7-.9 2-2.1 4-2.1 3.4 0 4.7 3.6 2.9 7-2.5 4.5-9.5 9-9.5 9z" />
-      </svg>
-      {{ review.likesCount }}
-    </div>
-    <div class="footer-action" [class.disabled]="!review.spotifyAlbumId" (click)="goToAlbum()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="12" cy="12" r="9" />
-        <path d="M9 8v8M15 8v8M9 12h6" />
-      </svg>
-      Ver álbum
-    </div>
-    <div class="report-wrap">
-      <button class="footer-action report-action" [disabled]="reportSent" (click)="toggleReportMenu()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M4 21V4l16 6-7 2 1 9z" />
-        </svg>
-        {{ reportSent ? 'Reportado' : 'Reportar' }}
-      </button>
-      <div class="report-menu" *ngIf="showReportMenu">
-        <button *ngFor="let reason of reportReasons" (click)="sendReport(reason.value)">
-          {{ reason.label }}
-        </button>
-      </div>
-    </div>
-  </div>
-</article>
-</file>
-
-<file path="frontend/src/app/shared/review-card/review-card.scss">
-:host {
-  --bg: #0a1128;
-  --accent: #17d1e8;
-  --accent-2: #9b5de5;
-  --text: #ffffff;
-  --text-secondary: #8f9cae;
-  --card: #131c38;
-  --card-border: rgba(143, 156, 174, 0.14);
-  --accent-glow: rgba(23, 209, 232, 0.25);
-  --danger: #f15f6c;
-  --success: #2ee89a;
-
-  display: block;
-  font-family: 'Inter', sans-serif;
-  color: var(--text);
-}
-
-.review-card {
-  background: var(--card);
-  border: 1px solid var(--card-border);
-  border-radius: 16px;
-  padding: 18px;
-  transition: border-color 0.15s;
-}
-.review-card:hover {
-  border-color: rgba(23, 209, 232, 0.35);
-}
-
-.review-head {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 14px;
-}
-.review-head .meta {
-  flex: 1;
-  min-width: 0;
-}
-.review-head .uname {
-  font-size: 13.5px;
-  font-weight: 600;
-}
-.review-head .when {
-  font-size: 12px;
-  color: var(--text-secondary);
-}
-
-.avatar-sm {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #3a4a78, #1b2750);
-  background-size: cover;
-  background-position: center;
-  flex-shrink: 0;
-  border: 1.5px solid rgba(23, 209, 232, 0.4);
-}
-
-.follow-pill {
-  font-size: 11.5px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  border: 1px solid var(--card-border);
-  border-radius: 20px;
-  padding: 4px 12px;
-  background: transparent;
-  cursor: pointer;
-}
-.follow-pill.following {
-  color: var(--accent);
-  border-color: rgba(23, 209, 232, 0.4);
-}
-.follow-pill:disabled {
-  opacity: 0.6;
-  cursor: default;
-}
-
-.review-body {
-  display: flex;
-  gap: 16px;
-}
-.album-art-wrap {
-  position: relative;
-  flex-shrink: 0;
-  width: 88px;
-  height: 88px;
-}
-.vinyl-peek {
-  position: absolute;
-  left: -26px;
-  top: 6px;
-  width: 76px;
-  height: 76px;
-  border-radius: 50%;
-  background:
-    repeating-radial-gradient(circle, #05070f 0 2px, #0d1430 2px 4px),
-    radial-gradient(circle, #05070f 0 18%, transparent 19%);
-  z-index: 1;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
-  transition: transform 0.35s ease;
-}
-.review-card:hover .vinyl-peek {
-  transform: translateX(-10px) rotate(35deg);
-}
-.album-art {
-  width: 88px;
-  height: 88px;
-  border-radius: 10px;
-  object-fit: cover;
-  position: relative;
-  z-index: 2;
-}
-.album-art-placeholder {
-  width: 88px;
-  height: 88px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #1b2750, #0d1430);
-  position: relative;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.review-content {
-  flex: 1;
-  min-width: 0;
-}
-.album-title {
-  font-size: 14px;
-  font-weight: 700;
-}
-.album-artist {
-  font-size: 12px;
-  color: var(--text-secondary);
-  margin-top: 2px;
-  margin-bottom: 8px;
-}
-.review-text {
-  font-size: 13px;
-  color: var(--text-secondary);
-  line-height: 1.55;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.review-footer {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-top: 14px;
-  padding-top: 12px;
-  border-top: 1px solid var(--card-border);
-}
-.footer-action {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12.5px;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: color 0.15s;
-  background: none;
-  border: none;
-  font-family: inherit;
-}
-.footer-action svg {
-  width: 15px;
-  height: 15px;
-}
-.footer-action:hover {
-  color: var(--text);
-}
-.footer-action.liked {
-  color: var(--accent);
-}
-.footer-action.liked svg {
-  fill: var(--accent);
-}
-.footer-action.disabled {
-  opacity: 0.5;
-  cursor: default;
-  pointer-events: none;
-}
-
-.report-wrap {
-  position: relative;
-  margin-left: auto;
-}
-.report-action:hover {
-  color: var(--danger);
-}
-.report-action:disabled {
-  opacity: 0.6;
-  cursor: default;
-}
-.report-menu {
-  position: absolute;
-  right: 0;
-  bottom: calc(100% + 8px);
-  background: var(--card);
-  border: 1px solid var(--card-border);
-  border-radius: 10px;
-  padding: 6px;
-  display: flex;
-  flex-direction: column;
-  min-width: 170px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
-  z-index: 10;
-}
-.report-menu button {
-  text-align: left;
-  font-size: 12.5px;
-  color: var(--text);
-  padding: 8px 10px;
-  border-radius: 6px;
-  background: none;
-  border: none;
-  font-family: inherit;
-  cursor: pointer;
-}
-.report-menu button:hover {
-  background: rgba(241, 95, 108, 0.12);
-  color: var(--danger);
-}
-</file>
-
 <file path="frontend/src/app/shared/review-card/review-card.spec.ts">
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
@@ -2962,164 +1875,6 @@ describe('ReviewCard', () => {
     expect(component).toBeTruthy();
   });
 });
-</file>
-
-<file path="frontend/src/app/shared/review-card/review-card.ts">
-import { Component, Input } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { StarRating } from '../star-rating/star-rating';
-import { Review, ReportReason } from '../../core/models/review.model';
-import { ReviewService } from '../../core/services/review';
-import { UserService } from '../../core/services/user';
-
-interface ReportReasonOption {
-  value: ReportReason;
-  label: string;
-}
-
-const REPORT_REASONS: ReportReasonOption[] = [
-  { value: 'SPAM', label: 'Spam' },
-  { value: 'OFFENSIVE_LANGUAGE', label: 'Lenguaje ofensivo' },
-  { value: 'FALSE_CONTENT', label: 'Contenido falso' },
-  { value: 'HARASSMENT', label: 'Acoso' },
-  { value: 'OTHER', label: 'Otro' },
-];
-
-@Component({
-  selector: 'app-review-card',
-  standalone: true,
-  imports: [CommonModule, StarRating],
-  templateUrl: './review-card.html',
-  styleUrl: './review-card.scss',
-})
-export class ReviewCard {
-  @Input({ required: true }) review!: Review;
-
-  reportReasons = REPORT_REASONS;
-  showReportMenu = false;
-  reportSent = false;
-  likeInFlight = false;
-  followInFlight = false;
-
-  constructor(
-    private reviewService: ReviewService,
-    private userService: UserService,
-  ) {}
-
-  get isFollowing(): boolean {
-    // Ver nota en review.model.ts: si el backend no manda isFollowedByMe,
-    // se asume que sí lo sigues (el feed "Siguiendo" debería ser justo eso).
-    return this.review.user?.isFollowedByMe !== false;
-  }
-
-  get timeAgo(): string {
-    const diffMs = Date.now() - new Date(this.review.createdAt).getTime();
-    const minutes = Math.floor(diffMs / 60000);
-    if (minutes < 1) return 'justo ahora';
-    if (minutes < 60) return `hace ${minutes} min`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `hace ${hours} h`;
-    const days = Math.floor(hours / 24);
-    return `hace ${days} d`;
-  }
-
-  toggleLike(): void {
-    if (this.likeInFlight) return;
-    this.likeInFlight = true;
-    this.reviewService.toggleLike(this.review.id).subscribe({
-      next: (res) => {
-        this.review.likedByMe = res.liked;
-        this.review.likesCount = res.likesCount;
-        this.likeInFlight = false;
-      },
-      error: () => (this.likeInFlight = false),
-    });
-  }
-
-  toggleFollow(): void {
-    if (this.followInFlight || !this.review.user?.id) return;
-    this.followInFlight = true;
-    const action$ = this.isFollowing
-      ? this.userService.unfollow(this.review.user.id)
-      : this.userService.follow(this.review.user.id);
-
-    action$.subscribe({
-      next: (res) => {
-        this.review.user.isFollowedByMe = res.following;
-        this.followInFlight = false;
-      },
-      error: () => (this.followInFlight = false),
-    });
-  }
-
-  toggleReportMenu(): void {
-    if (this.reportSent) return;
-    this.showReportMenu = !this.showReportMenu;
-  }
-
-  sendReport(reason: ReportReason): void {
-    this.showReportMenu = false;
-    this.reviewService.report(this.review.id, reason).subscribe({
-      next: () => (this.reportSent = true),
-      // Si ya la había reportado antes (409) igual la marcamos como enviada
-      // en la UI para no dejar el botón dando vueltas.
-      error: () => (this.reportSent = true),
-    });
-  }
-
-  goToAlbum(): void {
-    if (!this.review.spotifyAlbumId) {
-      // El contrato v1.0 no incluye spotifyAlbumId en /api/reviews/feed,
-      // así que todavía no hay forma de armar el link al detalle del álbum.
-      console.warn(
-        '[ReviewCard] Falta spotifyAlbumId en esta reseña; pedir a backend que lo agregue al feed.',
-      );
-      return;
-    }
-    // TODO: navegar cuando exista la ruta de detalle de álbum registrada
-    // en app.routes.ts (el componente AlbumDetail todavía es un stub).
-  }
-}
-</file>
-
-<file path="frontend/src/app/shared/star-rating/star-rating.html">
-<div class="stars">
-  <svg
-    *ngFor="let filled of stars"
-    [class.star-on]="filled"
-    [class.star-off]="!filled"
-    viewBox="0 0 24 24"
-  >
-    <path d="M12 2l3 6.5 7 .8-5.2 4.9 1.4 7-6.2-3.6-6.2 3.6 1.4-7L2 9.3l7-.8z" />
-  </svg>
-</div>
-</file>
-
-<file path="frontend/src/app/shared/star-rating/star-rating.scss">
-:host {
-  display: block;
-}
-
-.stars {
-  display: flex;
-  gap: 3px;
-  margin-bottom: 8px;
-}
-
-.stars svg {
-  width: 13px;
-  height: 13px;
-}
-
-.star-on {
-  fill: #17d1e8;
-  color: #17d1e8;
-}
-
-.star-off {
-  fill: rgba(143, 156, 174, 0.3);
-  color: rgba(143, 156, 174, 0.3);
-}
 </file>
 
 <file path="frontend/src/app/shared/star-rating/star-rating.spec.ts">
@@ -3147,28 +1902,6 @@ describe('StarRating', () => {
 });
 </file>
 
-<file path="frontend/src/app/shared/star-rating/star-rating.ts">
-import { Component, Input } from '@angular/core';
-import { CommonModule } from '@angular/common';
-
-@Component({
-  selector: 'app-star-rating',
-  standalone: true,
-  imports: [CommonModule],
-  templateUrl: './star-rating.html',
-  styleUrl: './star-rating.scss',
-})
-export class StarRating {
-  @Input() rating = 0;
-  @Input() max = 5;
-
-  get stars(): boolean[] {
-    const rounded = Math.round(this.rating);
-    return Array.from({ length: this.max }, (_, i) => i < rounded);
-  }
-}
-</file>
-
 <file path="frontend/src/main.ts">
 import { bootstrapApplication } from '@angular/platform-browser';
 import { appConfig } from './app/app.config';
@@ -3176,69 +1909,6 @@ import { App } from './app/app';
 
 bootstrapApplication(App, appConfig)
   .catch((err) => console.error(err));
-</file>
-
-<file path="frontend/src/styles.scss">
-/* You can add global styles to this file, and also import other style files */
-/* You can add global styles to this file, and also import other style files */
-
-:root {
-  --bg: #0a1128;
-  --accent: #17d1e8;
-  --accent-2: #9b5de5;
-  --text: #ffffff;
-  --text-secondary: #8f9cae;
-  --card: #131c38;
-  --card-border: rgba(143, 156, 174, 0.14);
-  --accent-glow: rgba(23, 209, 232, 0.25);
-  --danger: #f15f6c;
-  --success: #2ee89a;
-}
-
-* {
-  box-sizing: border-box;
-}
-
-html,
-body {
-  height: 100%;
-  margin: 0;
-  background: var(--bg);
-}
-
-body {
-  min-height: 100vh;
-  font-family: 'Inter', sans-serif;
-  color: var(--text);
-}
-
-h1,
-h2,
-h3 {
-  font-family: 'Space Grotesk', sans-serif;
-}
-
-a {
-  color: inherit;
-  text-decoration: none;
-}
-
-button {
-  font-family: inherit;
-  cursor: pointer;
-}
-
-/* Scrollbar consistente con el mockup */
-::-webkit-scrollbar {
-  width: 8px;
-}
-::-webkit-scrollbar-thumb {
-  background: rgba(143, 156, 174, 0.25);
-  border-radius: 8px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
 </file>
 
 <file path="frontend/tsconfig.app.json">
@@ -3334,51 +2004,6 @@ export const appConfig: ApplicationConfig = {
 <router-outlet ><router-outlet />
 </file>
 
-<file path="frontend/src/app/app.routes.ts">
-import { Routes } from '@angular/router';
-import { authGuard } from './core/guards/auth-guard';
-
-export const routes: Routes = [
-  { path: '', redirectTo: 'login', pathMatch: 'full' },
-
-  {
-    path: 'login',
-    loadComponent: () =>
-      import('./modules/auth/login/login').then((m) => m.LoginComponent),
-  },
-  {
-    path: 'register',
-    loadComponent: () =>
-      import('./modules/auth/register/register').then((m) => m.RegisterComponent),
-  },
-
-  {
-    path: 'settings',
-    //canActivate: [authGuard],
-    loadComponent: () =>
-      import('./modules/auth/settings/settings').then((m) => m.SettingsComponent),
-  },
-
-  {
-    path: 'listener/feed',
-    //canActivate: [authGuard],
-    loadComponent: () =>
-      import('./modules/listener/feed/feed').then((m) => m.Feed),
-  },
-  {
-    path: 'listener/my-profile',
-    //canActivate: [authGuard],
-    loadComponent: () =>
-      import('./modules/listener/my-profile/my-profile').then((m) => m.MyProfileComponent),
-  },
-
-  // alias usado en el sidebar (routerLink="/home") -> apunta al feed del listener
-  { path: 'home', redirectTo: 'listener/feed', pathMatch: 'full' },
-
-  { path: '**', redirectTo: 'login' },
-];
-</file>
-
 <file path="frontend/src/app/core/guards/auth-guard.ts">
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
@@ -3417,6 +2042,91 @@ export const jwtInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(req);
 };
+</file>
+
+<file path="frontend/src/app/core/models/review.model.ts">
+/**
+ * Coincide con las respuestas de ReviewController (/api/reviews) del
+ * API Contract v1.0.
+ */
+
+export interface ReviewFeedUser {
+  id: string;
+  username: string;
+  photoUrl?: string;
+  /**
+   * ⚠️ El contrato NO retorna este campo dentro de "user" en
+   * GET /api/reviews/feed. Se deja opcional y se asume `true` mientras
+   * no venga explícito, porque el feed "Siguiendo" en teoría solo trae
+   * reseñas de gente que ya sigues. Si el backend llega a exponerlo,
+   * esto ya queda listo para leerlo.
+   */
+  isFollowedByMe?: boolean;
+}
+
+export interface Review {
+  id: string;
+  user: ReviewFeedUser;
+  /**
+   * ⚠️ No viene en la respuesta de GET /api/reviews/feed según el
+   * contrato v1.0 (solo trae albumName/artistName/coverUrl). Sin este
+   * id no se puede armar el link real a "Ver álbum" (GET
+   * /api/spotify/albums/{spotifyAlbumId}). Hay que pedirle a Alexis que
+   * lo agregue a la respuesta del feed.
+   */
+  spotifyAlbumId?: string;
+  albumName: string;
+  artistName: string;
+  coverUrl?: string;
+  rating: number;
+  content: string;
+  likesCount: number;
+  likedByMe?: boolean;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface FeedResponse {
+  reviews: Review[];
+  page: number;
+  hasMore: boolean;
+}
+
+export interface AlbumReviewsResponse {
+  reviews: Review[];
+  averageRating: number;
+  totalReviews: number;
+}
+
+export interface LikeResponse {
+  liked: boolean;
+  likesCount: number;
+}
+
+export type ReportReason =
+  | 'SPAM'
+  | 'OFFENSIVE_LANGUAGE'
+  | 'FALSE_CONTENT'
+  | 'HARASSMENT'
+  | 'OTHER';
+
+export interface MissionCompletedInfo {
+  name: string;
+  pointsEarned: number;
+}
+
+export interface CreateReviewPayload {
+  spotifyAlbumId: string;
+  albumName: string;
+  artistName: string;
+  coverUrl: string;
+  rating: number;
+  content: string;
+}
+
+export interface CreateReviewResponse extends Review {
+  missionCompleted?: MissionCompletedInfo;
+}
 </file>
 
 <file path="frontend/src/app/core/models/user.model.ts">
@@ -3523,6 +2233,78 @@ export class AuthService {
   logout() {
     localStorage.removeItem('sr_token');
     this.currentUserSubject.next(null);
+  }
+}
+</file>
+
+<file path="frontend/src/app/core/services/review.ts">
+import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import {
+  AlbumReviewsResponse,
+  CreateReviewPayload,
+  CreateReviewResponse,
+  FeedResponse,
+  LikeResponse,
+  ReportReason,
+  Review,
+} from '../models/review.model';
+
+/**
+ * Todas las rutas de este servicio requieren JWT (según el contrato).
+ * El token se agrega automáticamente por jwtInterceptor a cualquier
+ * request cuya URL contenga "/api/", así que aquí no hay que tocar
+ * headers manualmente.
+ */
+@Injectable({
+  providedIn: 'root',
+})
+export class ReviewService {
+  private baseUrl = 'http://localhost:8080/api/reviews';
+
+  constructor(private http: HttpClient) {}
+
+  // GET /api/reviews/feed - feed paginado (usuarios seguidos)
+  getFeed(page = 0): Observable<FeedResponse> {
+    return this.http.get<FeedResponse>(`${this.baseUrl}/feed`, {
+      params: { page },
+    });
+  }
+
+  // GET /api/reviews/album/{spotifyAlbumId}
+  getAlbumReviews(spotifyAlbumId: string): Observable<AlbumReviewsResponse> {
+    return this.http.get<AlbumReviewsResponse>(`${this.baseUrl}/album/${spotifyAlbumId}`);
+  }
+
+  // GET /api/reviews/{id}
+  getById(id: string): Observable<Review> {
+    return this.http.get<Review>(`${this.baseUrl}/${id}`);
+  }
+
+  // POST /api/reviews
+  create(payload: CreateReviewPayload): Observable<CreateReviewResponse> {
+    return this.http.post<CreateReviewResponse>(this.baseUrl, payload);
+  }
+
+  // PUT /api/reviews/{id} - solo el dueño
+  update(id: string, payload: { rating: number; content: string }): Observable<Review> {
+    return this.http.put<Review>(`${this.baseUrl}/${id}`, payload);
+  }
+
+  // DELETE /api/reviews/{id} - solo el dueño
+  delete(id: string): Observable<{ message: string }> {
+    return this.http.delete<{ message: string }>(`${this.baseUrl}/${id}`);
+  }
+
+  // POST /api/reviews/{id}/like - toggle (like/unlike)
+  toggleLike(id: string): Observable<LikeResponse> {
+    return this.http.post<LikeResponse>(`${this.baseUrl}/${id}/like`, {});
+  }
+
+  // POST /api/reviews/{id}/report
+  report(id: string, reason: ReportReason): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.baseUrl}/${id}/report`, { reason });
   }
 }
 </file>
@@ -5233,6 +4015,636 @@ export class SettingsComponent implements OnInit {
 }
 </file>
 
+<file path="frontend/src/app/modules/listener/feed/feed.html">
+<!--
+  Esta plantilla es SOLO el contenido "main" + rail de la vista Feed/Inicio
+  (VISTA 2 del mockup). La sidebar es un componente aparte que envolverá
+  esta vista dentro de un layout tipo:
+
+  <div class="app">
+    <app-sidebar></app-sidebar>
+    <router-outlet></router-outlet>  <-- aquí se monta este componente
+  </div>
+-->
+<div class="feed-layout">
+  <main class="main">
+    <div class="topbar">
+      <div class="topbar-row">
+        <h1>Inicio</h1>
+        <div class="search-wrap">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="7" />
+            <path d="M21 21l-4.3-4.3" />
+          </svg>
+          <input type="text" placeholder="Buscar álbumes, artistas o usuarios…" />
+        </div>
+        <button class="icon-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 8a6 6 0 10-12 0c0 5-2 6-2 6h16s-2-1-2-6z" />
+            <path d="M9.5 20a2.5 2.5 0 005 0" />
+          </svg>
+          <span class="dot-alert"></span>
+        </button>
+        <div class="avatar-sm"></div>
+      </div>
+      <div class="feed-tabs">
+        <div class="feed-tab" [class.active]="activeTab === 'following'" (click)="selectTab('following')">
+          Siguiendo
+        </div>
+        <div class="feed-tab" [class.active]="activeTab === 'trending'" (click)="selectTab('trending')">
+          Tendencias
+        </div>
+        <div class="feed-tab" [class.active]="activeTab === 'new-releases'" (click)="selectTab('new-releases')">
+          Nuevos lanzamientos
+        </div>
+      </div>
+    </div>
+
+    <div class="feed">
+      <div class="suggest-banner">
+        <div class="ic">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="8" r="4" />
+            <path d="M4 21c0-4 3.5-7 8-7s8 3 8 7" />
+            <path d="M19 8v6M16 11h6" />
+          </svg>
+        </div>
+        <div class="txt">
+          <strong>Tu feed está un poco vacío</strong>
+          <p>Sigue a más oyentes y artistas para llenarlo de reseñas.</p>
+        </div>
+        <button class="cta">Buscar a quién seguir</button>
+      </div>
+
+      <ng-container *ngIf="activeTab === 'following'; else pendingTab">
+        <div class="feed-status" *ngIf="loading">Cargando tu feed…</div>
+        <div class="feed-status error" *ngIf="!loading && errorMessage">{{ errorMessage }}</div>
+        <div class="feed-status" *ngIf="!loading && !errorMessage && reviews.length === 0">
+          Aún no hay reseñas en tu feed. Sigue a otros oyentes o artistas para verlas aquí.
+        </div>
+
+        <app-review-card *ngFor="let review of reviews" [review]="review"></app-review-card>
+
+        <div class="pagination" *ngIf="!loading && !errorMessage && reviews.length > 0">
+          <button class="page-btn page-arrow" [disabled]="page === 0" (click)="goToPage(page - 1)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+          </button>
+          <button
+            *ngFor="let n of pageNumbers"
+            class="page-btn"
+            [class.active]="n === page"
+            (click)="goToPage(n)"
+          >
+            {{ n + 1 }}
+          </button>
+          <button class="page-btn page-arrow" [disabled]="!hasMore" (click)="goToPage(page + 1)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M9 18l6-6-6-6" />
+            </svg>
+          </button>
+        </div>
+      </ng-container>
+
+      <ng-template #pendingTab>
+        <div class="feed-status">
+          Esta pestaña todavía no tiene un endpoint definido en el API Contract v1.0. Próximamente.
+        </div>
+      </ng-template>
+    </div>
+  </main>
+
+  <!-- Rail: contenido de referencia visual del mockup. Misiones y Tendencias
+       quedan pendientes de MissionController y de un endpoint de géneros;
+       por ahora es solo maquetación fiel al mockup, sin datos reales. -->
+  <aside class="rail">
+    <div class="rail-card">
+      <h3>Misiones de hoy <a>Ver todas</a></h3>
+      <div class="mission-row">
+        <div class="mission-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 19V5M5 12l7-7 7 7" />
+          </svg>
+        </div>
+        <div class="mission-info">
+          <div class="mname">Escribe 1 reseña</div>
+          <div class="mission-bar"><span style="width: 60%"></span></div>
+        </div>
+        <div class="mission-pts">+20</div>
+      </div>
+      <div class="mission-row">
+        <div class="mission-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path
+              d="M12 21s-7-4.5-9.5-9C.7 8.6 2 5 5.4 5c2 0 3.3 1.2 4 2.1.7-.9 2-2.1 4-2.1 3.4 0 4.7 3.6 2.9 7-2.5 4.5-9.5 9-9.5 9z"
+            />
+          </svg>
+        </div>
+        <div class="mission-info">
+          <div class="mname">Da like a 5 reseñas</div>
+          <div class="mission-bar"><span style="width: 80%"></span></div>
+        </div>
+        <div class="mission-pts">+10</div>
+      </div>
+      <div class="mission-row">
+        <div class="mission-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="8" r="4" />
+            <path d="M4 21c0-4 3.5-7 8-7s8 3 8 7" />
+          </svg>
+        </div>
+        <div class="mission-info">
+          <div class="mname">Sigue a 1 artista nuevo</div>
+          <div class="mission-bar"><span style="width: 0%"></span></div>
+        </div>
+        <div class="mission-pts">+15</div>
+      </div>
+    </div>
+
+    <div class="rail-card">
+      <h3>Tendencias</h3>
+      <div>
+        <span class="genre-pill">Reggaetón <span class="n">2.3k</span></span>
+        <span class="genre-pill">Synth-pop LATAM <span class="n">1.1k</span></span>
+        <span class="genre-pill">Cumbia <span class="n">980</span></span>
+        <span class="genre-pill">Indie folk <span class="n">740</span></span>
+        <span class="genre-pill">Trap en español <span class="n">615</span></span>
+      </div>
+    </div>
+
+    <div class="rail-card premium-banner">
+      <h3>Oyente Premium</h3>
+      <p>Sin anuncios, estadísticas avanzadas de tu gusto musical y acceso anticipado a nuevas funciones.</p>
+      <a class="cta" routerLink="/plans">Ver planes</a>
+    </div>
+  </aside>
+</div>
+</file>
+
+<file path="frontend/src/app/modules/listener/feed/feed.scss">
+:host {
+  --bg: #0a1128;
+  --accent: #17d1e8;
+  --accent-2: #9b5de5;
+  --text: #ffffff;
+  --text-secondary: #8f9cae;
+  --card: #131c38;
+  --card-border: rgba(143, 156, 174, 0.14);
+  --accent-glow: rgba(23, 209, 232, 0.25);
+  --danger: #f15f6c;
+  --success: #2ee89a;
+
+  display: block;
+  font-family: 'Inter', sans-serif;
+  color: var(--text);
+}
+
+h1,
+h2,
+h3 {
+  font-family: 'Space Grotesk', sans-serif;
+}
+
+/* ===== LAYOUT (main + rail, sin la columna de sidebar) ===== */
+.feed-layout {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  max-width: 1264px;
+  margin: 0 auto;
+  min-height: 100vh;
+}
+@media (max-width: 960px) {
+  .feed-layout {
+    grid-template-columns: 1fr;
+  }
+  .rail {
+    border-left: none;
+    border-top: 1px solid var(--card-border);
+  }
+}
+
+.main {
+  min-height: 100vh;
+  background: radial-gradient(circle at 85% -5%, rgba(23, 209, 232, 0.08), transparent 45%), var(--bg);
+}
+
+/* ===== TOPBAR ===== */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: rgba(10, 17, 40, 0.85);
+  backdrop-filter: blur(10px);
+  padding: 18px 28px;
+  border-bottom: 1px solid var(--card-border);
+}
+.topbar-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.topbar h1 {
+  font-size: 20px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.search-wrap {
+  flex: 1;
+  position: relative;
+}
+.search-wrap input {
+  width: 100%;
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 24px;
+  padding: 10px 16px 10px 40px;
+  font-size: 13.5px;
+  color: var(--text);
+  font-family: inherit;
+}
+.search-wrap input::placeholder {
+  color: var(--text-secondary);
+}
+.search-wrap input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+.search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 15px;
+  height: 15px;
+  color: var(--text-secondary);
+}
+.icon-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  flex-shrink: 0;
+  position: relative;
+}
+.icon-btn svg {
+  width: 17px;
+  height: 17px;
+  color: var(--text-secondary);
+}
+.icon-btn:hover svg {
+  color: var(--text);
+}
+.dot-alert {
+  position: absolute;
+  top: 8px;
+  right: 9px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent);
+}
+.avatar-sm {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3a4a78, #1b2750);
+  flex-shrink: 0;
+  border: 1.5px solid rgba(23, 209, 232, 0.4);
+}
+.feed-tabs {
+  display: flex;
+  gap: 22px;
+  margin-top: 16px;
+}
+.feed-tab {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  padding-bottom: 10px;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+}
+.feed-tab.active {
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+/* ===== FEED ===== */
+.feed {
+  padding: 22px 28px 60px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.feed-status {
+  text-align: center;
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  padding: 24px 0;
+}
+.feed-status.error {
+  color: var(--danger);
+}
+.suggest-banner {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.suggest-banner .ic {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(23, 209, 232, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.suggest-banner .ic svg {
+  width: 20px;
+  height: 20px;
+  color: var(--accent);
+}
+.suggest-banner .txt {
+  flex: 1;
+}
+.suggest-banner .txt strong {
+  font-size: 14px;
+}
+.suggest-banner .txt p {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  margin-top: 3px;
+}
+.suggest-banner .cta {
+  background: var(--accent);
+  color: var(--bg);
+  font-weight: 700;
+  font-size: 12.5px;
+  padding: 9px 16px;
+  border-radius: 10px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  border: none;
+  cursor: pointer;
+}
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 0 20px;
+}
+.page-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.page-btn.active {
+  background: var(--accent);
+  color: var(--bg);
+  border-color: var(--accent);
+}
+.page-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.page-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ===== RIGHT RAIL ===== */
+.rail {
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  border-left: 1px solid var(--card-border);
+}
+.rail-card {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 14px;
+  padding: 16px;
+}
+.rail-card h3 {
+  font-size: 13.5px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.rail-card h3 a {
+  font-size: 11.5px;
+  color: var(--accent);
+  font-weight: 500;
+  cursor: pointer;
+}
+.mission-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.mission-row:last-child {
+  margin-bottom: 0;
+}
+.mission-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(23, 209, 232, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.mission-icon svg {
+  width: 16px;
+  height: 16px;
+  color: var(--accent);
+}
+.mission-info {
+  flex: 1;
+  min-width: 0;
+}
+.mname {
+  font-size: 12.5px;
+  font-weight: 500;
+  margin-bottom: 5px;
+}
+.mission-bar {
+  height: 4px;
+  background: rgba(143, 156, 174, 0.15);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.mission-bar span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  border-radius: 4px;
+}
+.mission-pts {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  flex-shrink: 0;
+}
+.genre-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 7px 12px;
+  border-radius: 20px;
+  background: rgba(143, 156, 174, 0.08);
+  border: 1px solid var(--card-border);
+  margin: 0 6px 8px 0;
+  cursor: pointer;
+}
+.genre-pill .n {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+.genre-pill:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.premium-banner {
+  background: linear-gradient(150deg, #0d1a3d, #131c38 60%);
+  border: 1px solid rgba(23, 209, 232, 0.3);
+}
+.premium-banner p {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+.premium-banner .cta {
+  display: inline-block;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--bg);
+  background: var(--accent);
+  padding: 9px 16px;
+  border-radius: 10px;
+}
+</file>
+
+<file path="frontend/src/app/modules/listener/feed/feed.ts">
+import { Component, OnDestroy, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
+import { Subscription } from 'rxjs';
+import { ReviewCard } from '../../../shared/review-card/review-card';
+import { ReviewService } from '../../../core/services/review';
+import { Review } from '../../../core/models/review.model';
+import { AuthService } from '../../../core/services/auth';
+
+type FeedTab = 'following' | 'trending' | 'new-releases';
+
+@Component({
+  selector: 'app-feed',
+  standalone: true,
+  imports: [CommonModule, RouterModule, ReviewCard],
+  templateUrl: './feed.html',
+  styleUrl: './feed.scss',
+})
+export class Feed implements OnInit, OnDestroy {
+  reviews: Review[] = [];
+  loading = true;
+  errorMessage: string | null = null;
+  page = 0;
+  hasMore = false;
+
+  activeTab: FeedTab = 'following';
+
+  private userSub?: Subscription;
+
+  constructor(
+    private reviewService: ReviewService,
+    private authService: AuthService,
+  ) {}
+
+  ngOnInit(): void {
+    // Aseguramos que haya un usuario cargado (por si se entra directo a
+    // /listener/feed con un token en localStorage pero sin pasar por login).
+    this.userSub = this.authService.currentUser$.subscribe();
+    this.loadFeed(0);
+  }
+
+  ngOnDestroy(): void {
+    this.userSub?.unsubscribe();
+  }
+
+  selectTab(tab: FeedTab): void {
+    this.activeTab = tab;
+    if (tab === 'following') {
+      this.loadFeed(0);
+    }
+    // "Tendencias" y "Nuevos lanzamientos" no tienen endpoint todavía en el
+    // API Contract v1.0 (solo existe GET /api/reviews/feed). Se dejan las
+    // pestañas visibles para respetar el mockup, pero sin datos reales
+    // hasta que el backend defina esas rutas.
+  }
+
+  loadFeed(page: number): void {
+    this.loading = true;
+    this.errorMessage = null;
+    this.reviewService.getFeed(page).subscribe({
+      next: (res) => {
+        this.reviews = res.reviews;
+        this.page = res.page;
+        this.hasMore = res.hasMore;
+        this.loading = false;
+      },
+      error: () => {
+        this.errorMessage = 'No pudimos cargar tu feed. Intenta de nuevo.';
+        this.loading = false;
+      },
+    });
+  }
+
+  goToPage(page: number): void {
+    if (page < 0) return;
+    if (page > this.page && !this.hasMore) return;
+    this.loadFeed(page);
+  }
+
+  get pageNumbers(): number[] {
+    // La API solo retorna hasMore (no un total de páginas), así que
+    // mostramos la página actual y, si hay más, la siguiente conocida.
+    const nums = [this.page];
+    if (this.hasMore) nums.push(this.page + 1);
+    return nums;
+  }
+}
+</file>
+
 <file path="frontend/src/app/modules/listener/my-profile/my-profile.html">
 <!--
   Esta plantilla es SOLO el contenido "main" de la vista Mi Perfil
@@ -5598,6 +5010,486 @@ export class MyProfileComponent implements OnInit {
 }
 </file>
 
+<file path="frontend/src/app/shared/review-card/review-card.html">
+<article class="review-card">
+  <div class="review-head">
+    <div
+      class="avatar-sm"
+      [style.background-image]="review.user.photoUrl ? 'url(' + review.user.photoUrl + ')' : null"
+    ></div>
+    <div class="meta">
+      <div class="uname">{{ review.user.username }}</div>
+      <div class="when">{{ timeAgo }}</div>
+    </div>
+    <button
+      class="follow-pill"
+      [class.following]="isFollowing"
+      [disabled]="followInFlight"
+      (click)="toggleFollow()"
+    >
+      {{ isFollowing ? 'Siguiendo' : 'Seguir' }}
+    </button>
+  </div>
+
+  <div class="review-body">
+    <div class="album-art-wrap">
+      <div class="vinyl-peek"></div>
+      <img *ngIf="review.coverUrl" class="album-art" [src]="review.coverUrl" [alt]="review.albumName" />
+      <div *ngIf="!review.coverUrl" class="album-art-placeholder">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="rgba(143,156,174,0.3)" stroke-width="1.5">
+          <circle cx="12" cy="12" r="10" />
+          <circle cx="12" cy="12" r="3" />
+        </svg>
+      </div>
+    </div>
+    <div class="review-content">
+      <div class="album-title">{{ review.albumName }}</div>
+      <div class="album-artist">{{ review.artistName }}</div>
+      <app-star-rating [rating]="review.rating"></app-star-rating>
+      <p class="review-text">{{ review.content }}</p>
+    </div>
+  </div>
+
+  <div class="review-footer">
+    <div class="footer-action" [class.liked]="review.likedByMe" (click)="toggleLike()">
+      <svg viewBox="0 0 24 24" [attr.fill]="review.likedByMe ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2">
+        <path d="M12 21s-7-4.5-9.5-9C.7 8.6 2 5 5.4 5c2 0 3.3 1.2 4 2.1.7-.9 2-2.1 4-2.1 3.4 0 4.7 3.6 2.9 7-2.5 4.5-9.5 9-9.5 9z" />
+      </svg>
+      {{ review.likesCount }}
+    </div>
+    <div class="footer-action" [class.disabled]="!review.spotifyAlbumId" (click)="goToAlbum()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="9" />
+        <path d="M9 8v8M15 8v8M9 12h6" />
+      </svg>
+      Ver álbum
+    </div>
+    <div class="report-wrap">
+      <button class="footer-action report-action" [disabled]="reportSent" (click)="toggleReportMenu()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 21V4l16 6-7 2 1 9z" />
+        </svg>
+        {{ reportSent ? 'Reportado' : 'Reportar' }}
+      </button>
+      <div class="report-menu" *ngIf="showReportMenu">
+        <button *ngFor="let reason of reportReasons" (click)="sendReport(reason.value)">
+          {{ reason.label }}
+        </button>
+      </div>
+    </div>
+  </div>
+</article>
+</file>
+
+<file path="frontend/src/app/shared/review-card/review-card.scss">
+:host {
+  --bg: #0a1128;
+  --accent: #17d1e8;
+  --accent-2: #9b5de5;
+  --text: #ffffff;
+  --text-secondary: #8f9cae;
+  --card: #131c38;
+  --card-border: rgba(143, 156, 174, 0.14);
+  --accent-glow: rgba(23, 209, 232, 0.25);
+  --danger: #f15f6c;
+  --success: #2ee89a;
+
+  display: block;
+  font-family: 'Inter', sans-serif;
+  color: var(--text);
+}
+
+.review-card {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  padding: 18px;
+  transition: border-color 0.15s;
+}
+.review-card:hover {
+  border-color: rgba(23, 209, 232, 0.35);
+}
+
+.review-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.review-head .meta {
+  flex: 1;
+  min-width: 0;
+}
+.review-head .uname {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.review-head .when {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.avatar-sm {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3a4a78, #1b2750);
+  background-size: cover;
+  background-position: center;
+  flex-shrink: 0;
+  border: 1.5px solid rgba(23, 209, 232, 0.4);
+}
+
+.follow-pill {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  border: 1px solid var(--card-border);
+  border-radius: 20px;
+  padding: 4px 12px;
+  background: transparent;
+  cursor: pointer;
+}
+.follow-pill.following {
+  color: var(--accent);
+  border-color: rgba(23, 209, 232, 0.4);
+}
+.follow-pill:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.review-body {
+  display: flex;
+  gap: 16px;
+}
+.album-art-wrap {
+  position: relative;
+  flex-shrink: 0;
+  width: 88px;
+  height: 88px;
+}
+.vinyl-peek {
+  position: absolute;
+  left: -26px;
+  top: 6px;
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background:
+    repeating-radial-gradient(circle, #05070f 0 2px, #0d1430 2px 4px),
+    radial-gradient(circle, #05070f 0 18%, transparent 19%);
+  z-index: 1;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  transition: transform 0.35s ease;
+}
+.review-card:hover .vinyl-peek {
+  transform: translateX(-10px) rotate(35deg);
+}
+.album-art {
+  width: 88px;
+  height: 88px;
+  border-radius: 10px;
+  object-fit: cover;
+  position: relative;
+  z-index: 2;
+}
+.album-art-placeholder {
+  width: 88px;
+  height: 88px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #1b2750, #0d1430);
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.review-content {
+  flex: 1;
+  min-width: 0;
+}
+.album-title {
+  font-size: 14px;
+  font-weight: 700;
+}
+.album-artist {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+  margin-bottom: 8px;
+}
+.review-text {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.55;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.review-footer {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--card-border);
+}
+.footer-action {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color 0.15s;
+  background: none;
+  border: none;
+  font-family: inherit;
+}
+.footer-action svg {
+  width: 15px;
+  height: 15px;
+}
+.footer-action:hover {
+  color: var(--text);
+}
+.footer-action.liked {
+  color: var(--accent);
+}
+.footer-action.liked svg {
+  fill: var(--accent);
+}
+.footer-action.disabled {
+  opacity: 0.5;
+  cursor: default;
+  pointer-events: none;
+}
+
+.report-wrap {
+  position: relative;
+  margin-left: auto;
+}
+.report-action:hover {
+  color: var(--danger);
+}
+.report-action:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.report-menu {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 8px);
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  min-width: 170px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  z-index: 10;
+}
+.report-menu button {
+  text-align: left;
+  font-size: 12.5px;
+  color: var(--text);
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: none;
+  border: none;
+  font-family: inherit;
+  cursor: pointer;
+}
+.report-menu button:hover {
+  background: rgba(241, 95, 108, 0.12);
+  color: var(--danger);
+}
+</file>
+
+<file path="frontend/src/app/shared/review-card/review-card.ts">
+import { Component, Input } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { StarRating } from '../star-rating/star-rating';
+import { Review, ReportReason } from '../../core/models/review.model';
+import { ReviewService } from '../../core/services/review';
+import { UserService } from '../../core/services/user';
+
+interface ReportReasonOption {
+  value: ReportReason;
+  label: string;
+}
+
+const REPORT_REASONS: ReportReasonOption[] = [
+  { value: 'SPAM', label: 'Spam' },
+  { value: 'OFFENSIVE_LANGUAGE', label: 'Lenguaje ofensivo' },
+  { value: 'FALSE_CONTENT', label: 'Contenido falso' },
+  { value: 'HARASSMENT', label: 'Acoso' },
+  { value: 'OTHER', label: 'Otro' },
+];
+
+@Component({
+  selector: 'app-review-card',
+  standalone: true,
+  imports: [CommonModule, StarRating],
+  templateUrl: './review-card.html',
+  styleUrl: './review-card.scss',
+})
+export class ReviewCard {
+  @Input({ required: true }) review!: Review;
+
+  reportReasons = REPORT_REASONS;
+  showReportMenu = false;
+  reportSent = false;
+  likeInFlight = false;
+  followInFlight = false;
+
+  constructor(
+    private reviewService: ReviewService,
+    private userService: UserService,
+  ) {}
+
+  get isFollowing(): boolean {
+    // Ver nota en review.model.ts: si el backend no manda isFollowedByMe,
+    // se asume que sí lo sigues (el feed "Siguiendo" debería ser justo eso).
+    return this.review.user?.isFollowedByMe !== false;
+  }
+
+  get timeAgo(): string {
+    const diffMs = Date.now() - new Date(this.review.createdAt).getTime();
+    const minutes = Math.floor(diffMs / 60000);
+    if (minutes < 1) return 'justo ahora';
+    if (minutes < 60) return `hace ${minutes} min`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `hace ${hours} h`;
+    const days = Math.floor(hours / 24);
+    return `hace ${days} d`;
+  }
+
+  toggleLike(): void {
+    if (this.likeInFlight) return;
+    this.likeInFlight = true;
+    this.reviewService.toggleLike(this.review.id).subscribe({
+      next: (res) => {
+        this.review.likedByMe = res.liked;
+        this.review.likesCount = res.likesCount;
+        this.likeInFlight = false;
+      },
+      error: () => (this.likeInFlight = false),
+    });
+  }
+
+  toggleFollow(): void {
+    if (this.followInFlight || !this.review.user?.id) return;
+    this.followInFlight = true;
+    const action$ = this.isFollowing
+      ? this.userService.unfollow(this.review.user.id)
+      : this.userService.follow(this.review.user.id);
+
+    action$.subscribe({
+      next: (res) => {
+        this.review.user.isFollowedByMe = res.following;
+        this.followInFlight = false;
+      },
+      error: () => (this.followInFlight = false),
+    });
+  }
+
+  toggleReportMenu(): void {
+    if (this.reportSent) return;
+    this.showReportMenu = !this.showReportMenu;
+  }
+
+  sendReport(reason: ReportReason): void {
+    this.showReportMenu = false;
+    this.reviewService.report(this.review.id, reason).subscribe({
+      next: () => (this.reportSent = true),
+      // Si ya la había reportado antes (409) igual la marcamos como enviada
+      // en la UI para no dejar el botón dando vueltas.
+      error: () => (this.reportSent = true),
+    });
+  }
+
+  goToAlbum(): void {
+    if (!this.review.spotifyAlbumId) {
+      // El contrato v1.0 no incluye spotifyAlbumId en /api/reviews/feed,
+      // así que todavía no hay forma de armar el link al detalle del álbum.
+      console.warn(
+        '[ReviewCard] Falta spotifyAlbumId en esta reseña; pedir a backend que lo agregue al feed.',
+      );
+      return;
+    }
+    // TODO: navegar cuando exista la ruta de detalle de álbum registrada
+    // en app.routes.ts (el componente AlbumDetail todavía es un stub).
+  }
+}
+</file>
+
+<file path="frontend/src/app/shared/star-rating/star-rating.html">
+<div class="stars">
+  <svg
+    *ngFor="let filled of stars"
+    [class.star-on]="filled"
+    [class.star-off]="!filled"
+    viewBox="0 0 24 24"
+  >
+    <path d="M12 2l3 6.5 7 .8-5.2 4.9 1.4 7-6.2-3.6-6.2 3.6 1.4-7L2 9.3l7-.8z" />
+  </svg>
+</div>
+</file>
+
+<file path="frontend/src/app/shared/star-rating/star-rating.scss">
+:host {
+  display: block;
+}
+
+.stars {
+  display: flex;
+  gap: 3px;
+  margin-bottom: 8px;
+}
+
+.stars svg {
+  width: 13px;
+  height: 13px;
+}
+
+.star-on {
+  fill: #17d1e8;
+  color: #17d1e8;
+}
+
+.star-off {
+  fill: rgba(143, 156, 174, 0.3);
+  color: rgba(143, 156, 174, 0.3);
+}
+</file>
+
+<file path="frontend/src/app/shared/star-rating/star-rating.ts">
+import { Component, Input } from '@angular/core';
+import { CommonModule } from '@angular/common';
+
+@Component({
+  selector: 'app-star-rating',
+  standalone: true,
+  imports: [CommonModule],
+  templateUrl: './star-rating.html',
+  styleUrl: './star-rating.scss',
+})
+export class StarRating {
+  @Input() rating = 0;
+  @Input() max = 5;
+
+  get stars(): boolean[] {
+    const rounded = Math.round(this.rating);
+    return Array.from({ length: this.max }, (_, i) => i < rounded);
+  }
+}
+</file>
+
 <file path="frontend/src/index.html">
 <!doctype html>
 <html lang="en">
@@ -5620,6 +5512,114 @@ export class MyProfileComponent implements OnInit {
   <app-root></app-root>
 </body>
 </html>
+</file>
+
+<file path="frontend/src/styles.scss">
+/* You can add global styles to this file, and also import other style files */
+/* You can add global styles to this file, and also import other style files */
+
+:root {
+  --bg: #0a1128;
+  --accent: #17d1e8;
+  --accent-2: #9b5de5;
+  --text: #ffffff;
+  --text-secondary: #8f9cae;
+  --card: #131c38;
+  --card-border: rgba(143, 156, 174, 0.14);
+  --accent-glow: rgba(23, 209, 232, 0.25);
+  --danger: #f15f6c;
+  --success: #2ee89a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  background: var(--bg);
+}
+
+body {
+  min-height: 100vh;
+  font-family: 'Inter', sans-serif;
+  color: var(--text);
+}
+
+h1,
+h2,
+h3 {
+  font-family: 'Space Grotesk', sans-serif;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* Scrollbar consistente con el mockup */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(143, 156, 174, 0.25);
+  border-radius: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+</file>
+
+<file path="frontend/src/app/app.routes.ts">
+import { Routes } from '@angular/router';
+import { authGuard } from './core/guards/auth-guard';
+
+export const routes: Routes = [
+  { path: '', redirectTo: 'login', pathMatch: 'full' },
+
+  {
+    path: 'login',
+    loadComponent: () =>
+      import('./modules/auth/login/login').then((m) => m.LoginComponent),
+  },
+  {
+    path: 'register',
+    loadComponent: () =>
+      import('./modules/auth/register/register').then((m) => m.RegisterComponent),
+  },
+
+  {
+    path: 'settings',
+    //canActivate: [authGuard],
+    loadComponent: () =>
+      import('./modules/auth/settings/settings').then((m) => m.SettingsComponent),
+  },
+
+  {
+    path: 'listener/feed',
+    //canActivate: [authGuard],
+    loadComponent: () =>
+      import('./modules/listener/feed/feed').then((m) => m.Feed),
+  },
+  {
+    path: 'listener/my-profile',
+    //canActivate: [authGuard],
+    loadComponent: () =>
+      import('./modules/listener/my-profile/my-profile').then((m) => m.MyProfileComponent),
+  },
+
+  // alias usado en el sidebar (routerLink="/home") -> apunta al feed del listener
+  { path: 'home', redirectTo: 'listener/feed', pathMatch: 'full' },
+
+  { path: '**', redirectTo: 'login' },
+];
 </file>
 
 </files>
