@@ -1,0 +1,12 @@
+<!--
+  Shell de las vistas autenticadas: columna fija del sidebar + el resto
+  del ancho para la vista activa (feed, my-profile, settings, ...).
+  Cada vista hija maneja su propio layout interno (p. ej. feed.html arma
+  su propia grilla main + rail dentro de este espacio de contenido).
+-->
+<div class="shell">
+  <app-sidebar></app-sidebar>
+  <div class="content">
+    <router-outlet></router-outlet>
+  </div>
+</div>
