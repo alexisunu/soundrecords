@@ -1,1 +1,68 @@
-<p>review-card works!</p>
+<article class="review-card">
+  <div class="review-head">
+    <div
+      class="avatar-sm"
+      [style.background-image]="review.user.photoUrl ? 'url(' + review.user.photoUrl + ')' : null"
+    ></div>
+    <div class="meta">
+      <div class="uname">{{ review.user.username }}</div>
+      <div class="when">{{ timeAgo }}</div>
+    </div>
+    <button
+      class="follow-pill"
+      [class.following]="isFollowing"
+      [disabled]="followInFlight"
+      (click)="toggleFollow()"
+    >
+      {{ isFollowing ? 'Siguiendo' : 'Seguir' }}
+    </button>
+  </div>
+
+  <div class="review-body">
+    <div class="album-art-wrap">
+      <div class="vinyl-peek"></div>
+      <img *ngIf="review.coverUrl" class="album-art" [src]="review.coverUrl" [alt]="review.albumName" />
+      <div *ngIf="!review.coverUrl" class="album-art-placeholder">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="rgba(143,156,174,0.3)" stroke-width="1.5">
+          <circle cx="12" cy="12" r="10" />
+          <circle cx="12" cy="12" r="3" />
+        </svg>
+      </div>
+    </div>
+    <div class="review-content">
+      <div class="album-title">{{ review.albumName }}</div>
+      <div class="album-artist">{{ review.artistName }}</div>
+      <app-star-rating [rating]="review.rating"></app-star-rating>
+      <p class="review-text">{{ review.content }}</p>
+    </div>
+  </div>
+
+  <div class="review-footer">
+    <div class="footer-action" [class.liked]="review.likedByMe" (click)="toggleLike()">
+      <svg viewBox="0 0 24 24" [attr.fill]="review.likedByMe ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2">
+        <path d="M12 21s-7-4.5-9.5-9C.7 8.6 2 5 5.4 5c2 0 3.3 1.2 4 2.1.7-.9 2-2.1 4-2.1 3.4 0 4.7 3.6 2.9 7-2.5 4.5-9.5 9-9.5 9z" />
+      </svg>
+      {{ review.likesCount }}
+    </div>
+    <div class="footer-action" [class.disabled]="!review.spotifyAlbumId" (click)="goToAlbum()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="9" />
+        <path d="M9 8v8M15 8v8M9 12h6" />
+      </svg>
+      Ver álbum
+    </div>
+    <div class="report-wrap">
+      <button class="footer-action report-action" [disabled]="reportSent" (click)="toggleReportMenu()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 21V4l16 6-7 2 1 9z" />
+        </svg>
+        {{ reportSent ? 'Reportado' : 'Reportar' }}
+      </button>
+      <div class="report-menu" *ngIf="showReportMenu">
+        <button *ngFor="let reason of reportReasons" (click)="sendReport(reason.value)">
+          {{ reason.label }}
+        </button>
+      </div>
+    </div>
+  </div>
+</article>

@@ -1,1 +1,164 @@
-<p>feed works!</p>
+<!--
+  Esta plantilla es SOLO el contenido "main" + rail de la vista Feed/Inicio
+  (VISTA 2 del mockup). La sidebar es un componente aparte que envolverá
+  esta vista dentro de un layout tipo:
+
+  <div class="app">
+    <app-sidebar></app-sidebar>
+    <router-outlet></router-outlet>  <-- aquí se monta este componente
+  </div>
+-->
+<div class="feed-layout">
+  <main class="main">
+    <div class="topbar">
+      <div class="topbar-row">
+        <h1>Inicio</h1>
+        <div class="search-wrap">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="7" />
+            <path d="M21 21l-4.3-4.3" />
+          </svg>
+          <input type="text" placeholder="Buscar álbumes, artistas o usuarios…" />
+        </div>
+        <button class="icon-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 8a6 6 0 10-12 0c0 5-2 6-2 6h16s-2-1-2-6z" />
+            <path d="M9.5 20a2.5 2.5 0 005 0" />
+          </svg>
+          <span class="dot-alert"></span>
+        </button>
+        <div class="avatar-sm"></div>
+      </div>
+      <div class="feed-tabs">
+        <div class="feed-tab" [class.active]="activeTab === 'following'" (click)="selectTab('following')">
+          Siguiendo
+        </div>
+        <div class="feed-tab" [class.active]="activeTab === 'trending'" (click)="selectTab('trending')">
+          Tendencias
+        </div>
+        <div class="feed-tab" [class.active]="activeTab === 'new-releases'" (click)="selectTab('new-releases')">
+          Nuevos lanzamientos
+        </div>
+      </div>
+    </div>
+
+    <div class="feed">
+      <div class="suggest-banner">
+        <div class="ic">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="8" r="4" />
+            <path d="M4 21c0-4 3.5-7 8-7s8 3 8 7" />
+            <path d="M19 8v6M16 11h6" />
+          </svg>
+        </div>
+        <div class="txt">
+          <strong>Tu feed está un poco vacío</strong>
+          <p>Sigue a más oyentes y artistas para llenarlo de reseñas.</p>
+        </div>
+        <button class="cta">Buscar a quién seguir</button>
+      </div>
+
+      <ng-container *ngIf="activeTab === 'following'; else pendingTab">
+        <div class="feed-status" *ngIf="loading">Cargando tu feed…</div>
+        <div class="feed-status error" *ngIf="!loading && errorMessage">{{ errorMessage }}</div>
+        <div class="feed-status" *ngIf="!loading && !errorMessage && reviews.length === 0">
+          Aún no hay reseñas en tu feed. Sigue a otros oyentes o artistas para verlas aquí.
+        </div>
+
+        <app-review-card *ngFor="let review of reviews" [review]="review"></app-review-card>
+
+        <div class="pagination" *ngIf="!loading && !errorMessage && reviews.length > 0">
+          <button class="page-btn page-arrow" [disabled]="page === 0" (click)="goToPage(page - 1)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+          </button>
+          <button
+            *ngFor="let n of pageNumbers"
+            class="page-btn"
+            [class.active]="n === page"
+            (click)="goToPage(n)"
+          >
+            {{ n + 1 }}
+          </button>
+          <button class="page-btn page-arrow" [disabled]="!hasMore" (click)="goToPage(page + 1)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M9 18l6-6-6-6" />
+            </svg>
+          </button>
+        </div>
+      </ng-container>
+
+      <ng-template #pendingTab>
+        <div class="feed-status">
+          Esta pestaña todavía no tiene un endpoint definido en el API Contract v1.0. Próximamente.
+        </div>
+      </ng-template>
+    </div>
+  </main>
+
+  <!-- Rail: contenido de referencia visual del mockup. Misiones y Tendencias
+       quedan pendientes de MissionController y de un endpoint de géneros;
+       por ahora es solo maquetación fiel al mockup, sin datos reales. -->
+  <aside class="rail">
+    <div class="rail-card">
+      <h3>Misiones de hoy <a>Ver todas</a></h3>
+      <div class="mission-row">
+        <div class="mission-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 19V5M5 12l7-7 7 7" />
+          </svg>
+        </div>
+        <div class="mission-info">
+          <div class="mname">Escribe 1 reseña</div>
+          <div class="mission-bar"><span style="width: 60%"></span></div>
+        </div>
+        <div class="mission-pts">+20</div>
+      </div>
+      <div class="mission-row">
+        <div class="mission-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path
+              d="M12 21s-7-4.5-9.5-9C.7 8.6 2 5 5.4 5c2 0 3.3 1.2 4 2.1.7-.9 2-2.1 4-2.1 3.4 0 4.7 3.6 2.9 7-2.5 4.5-9.5 9-9.5 9z"
+            />
+          </svg>
+        </div>
+        <div class="mission-info">
+          <div class="mname">Da like a 5 reseñas</div>
+          <div class="mission-bar"><span style="width: 80%"></span></div>
+        </div>
+        <div class="mission-pts">+10</div>
+      </div>
+      <div class="mission-row">
+        <div class="mission-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="8" r="4" />
+            <path d="M4 21c0-4 3.5-7 8-7s8 3 8 7" />
+          </svg>
+        </div>
+        <div class="mission-info">
+          <div class="mname">Sigue a 1 artista nuevo</div>
+          <div class="mission-bar"><span style="width: 0%"></span></div>
+        </div>
+        <div class="mission-pts">+15</div>
+      </div>
+    </div>
+
+    <div class="rail-card">
+      <h3>Tendencias</h3>
+      <div>
+        <span class="genre-pill">Reggaetón <span class="n">2.3k</span></span>
+        <span class="genre-pill">Synth-pop LATAM <span class="n">1.1k</span></span>
+        <span class="genre-pill">Cumbia <span class="n">980</span></span>
+        <span class="genre-pill">Indie folk <span class="n">740</span></span>
+        <span class="genre-pill">Trap en español <span class="n">615</span></span>
+      </div>
+    </div>
+
+    <div class="rail-card premium-banner">
+      <h3>Oyente Premium</h3>
+      <p>Sin anuncios, estadísticas avanzadas de tu gusto musical y acceso anticipado a nuevas funciones.</p>
+      <a class="cta" routerLink="/plans">Ver planes</a>
+    </div>
+  </aside>
+</div>

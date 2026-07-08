@@ -22,12 +22,12 @@ export const routes: Routes = [
       import('./modules/auth/settings/settings').then((m) => m.SettingsComponent),
   },
 
-    // {
-  //   path: 'listener/feed',
-  //   canActivate: [authGuard],
-  //   loadComponent: () =>
-  //     import('./modules/listener/feed/feed').then((m) => m.FeedComponent),
-  // },
+  {
+    path: 'listener/feed',
+    //canActivate: [authGuard],
+    loadComponent: () =>
+      import('./modules/listener/feed/feed').then((m) => m.Feed),
+  },
   {
     path: 'listener/my-profile',
     //canActivate: [authGuard],
