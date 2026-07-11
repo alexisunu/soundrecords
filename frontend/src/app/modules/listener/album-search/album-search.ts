@@ -15,6 +15,7 @@ type FilterChip = 'all' | '2020s';
   imports: [CommonModule, FormsModule, RouterModule],
   templateUrl: './album-search.html',
   styleUrl: './album-search.scss',
+  providers: [AlbumService]
 })
 export class AlbumSearch implements OnInit, OnDestroy {
   query = '';
