@@ -28,9 +28,15 @@ export interface AlbumSearchResult {
   myReview?: unknown | null;
 }
 
-export interface AlbumSearchResponse {
-  results: AlbumSearchResult[];
-}
+/**
+ * ⚠️ DESVIACIÓN DEL CONTRATO v1.0: el contrato documenta la respuesta de
+ * GET /api/spotify/search como { "results": [...] }, pero el backend
+ * real de Alexis devuelve un ResponseEntity<List<AlbumResponse>>, es
+ * decir un array plano. Por eso el service ya NO usa un wrapper tipo
+ * AlbumSearchResponse; search() retorna AlbumSearchResult[] directo.
+ * Si el backend llega a "corregirse" para envolver en results, hay que
+ * revertir este cambio en album.ts.
+ */
 
 export interface AlbumDetail {
   spotifyAlbumId: string;

@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { of, Subject } from 'rxjs';
-import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
+import { catchError, debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 import { AlbumService } from '../../../core/services/album';
 import { AlbumSearchResult } from '../../../core/models/album.model';
 
@@ -15,7 +15,6 @@ type FilterChip = 'all' | '2020s';
   imports: [CommonModule, FormsModule, RouterModule],
   templateUrl: './album-search.html',
   styleUrl: './album-search.scss',
-  providers: [AlbumService]
 })
 export class AlbumSearch implements OnInit, OnDestroy {
   query = '';
@@ -51,20 +50,30 @@ export class AlbumSearch implements OnInit, OnDestroy {
           this.loading = true;
           this.errorMessage = null;
           const year = this.activeFilter === '2020s' ? '2020' : undefined;
-          return this.albumService.search(trimmed, undefined, year);
+
+          return this.albumService.search(trimmed, undefined, year).pipe(
+            // IMPORTANTE: el catchError va DENTRO del switchMap. Si un
+            // error de un request individual llegara a explotar hasta
+            // el subscribe de abajo, mataría toda la suscripción al
+            // Subject y ninguna búsqueda posterior volvería a disparar.
+            catchError((err) => {
+              this.errorMessage =
+                err?.name === 'TimeoutError'
+                  ? 'La búsqueda está tardando demasiado. Intenta de nuevo.'
+                  : 'No pudimos completar la búsqueda. Intenta de nuevo.';
+              this.loading = false;
+              return of(null);
+            }),
+          );
         }),
       )
-      .subscribe({
-        next: (res) => {
-          if (!res) return; // caso q="" ya manejado arriba
-          this.searched = true;
-          this.results = res.results ?? [];
-          this.loading = false;
-        },
-        error: () => {
-          this.errorMessage = 'No pudimos completar la búsqueda. Intenta de nuevo.';
-          this.loading = false;
-        },
+      .subscribe((res) => {
+        if (!res) return; // caso q="" o error, ya manejados arriba
+        this.searched = true;
+        // El backend real devuelve un array plano (List<AlbumResponse>),
+        // no { results: [...] } como documenta el contrato v1.0.
+        this.results = res ?? [];
+        this.loading = false;
       });
   }
 
