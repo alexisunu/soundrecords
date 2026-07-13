@@ -19,34 +19,34 @@
       <input
         type="text"
         placeholder="Nombre del álbum, artista o género…"
-        [ngModel]="query"
+        [ngModel]="query()"
         (ngModelChange)="onQueryInput($event)"
       />
     </div>
   </div>
 
   <div class="search-filters">
-    <div class="filter-chip" [class.active]="activeFilter === 'all'" (click)="selectFilter('all')">Todos</div>
-    <div class="filter-chip" [class.active]="activeFilter === '2020s'" (click)="selectFilter('2020s')">2020+</div>
+    <div class="filter-chip" [class.active]="activeFilter() === 'all'" (click)="selectFilter('all')">Todos</div>
+    <div class="filter-chip" [class.active]="activeFilter() === '2020s'" (click)="selectFilter('2020s')">2020+</div>
   </div>
 
-  <div class="results-meta" *ngIf="searched && !loading && !errorMessage">
-    {{ results.length }} resultado{{ results.length === 1 ? '' : 's' }} vía Spotify API
+  <div class="results-meta" *ngIf="searched() && !loading() && !errorMessage()">
+    {{ results().length }} resultado{{ results().length === 1 ? '' : 's' }} vía Spotify API
   </div>
 
-  <div class="search-status" *ngIf="loading">Buscando…</div>
-  <div class="search-status error" *ngIf="!loading && errorMessage">{{ errorMessage }}</div>
+  <div class="search-status" *ngIf="loading()">Buscando…</div>
+  <div class="search-status error" *ngIf="!loading() && errorMessage()">{{ errorMessage() }}</div>
 
-  <div class="empty-state" *ngIf="!loading && !errorMessage && searched && results.length === 0">
+  <div class="empty-state" *ngIf="!loading() && !errorMessage() && searched() && results().length === 0">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
       <circle cx="11" cy="11" r="7" />
       <path d="M21 21l-4.3-4.3" />
     </svg>
     <h3>Sin resultados</h3>
-    <p>No encontramos álbumes para "{{ query }}". Prueba con otro nombre o artista.</p>
+    <p>No encontramos álbumes para "{{ query() }}". Prueba con otro nombre o artista.</p>
   </div>
 
-  <div class="empty-state" *ngIf="!loading && !errorMessage && !searched">
+  <div class="empty-state" *ngIf="!loading() && !errorMessage() && !searched()">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
       <circle cx="11" cy="11" r="7" />
       <path d="M21 21l-4.3-4.3" />
@@ -55,8 +55,8 @@
     <p>Busca por nombre de álbum, artista o género para ver resultados.</p>
   </div>
 
-  <div class="results-grid" *ngIf="!loading && !errorMessage && results.length > 0">
-    <div class="result-row" *ngFor="let album of results" (click)="goToAlbum(album)">
+  <div class="results-grid" *ngIf="!loading() && !errorMessage() && results().length > 0">
+    <div class="result-row" *ngFor="let album of results()" (click)="goToAlbum(album)">
       <img
         *ngIf="album.coverUrl"
         class="result-art"

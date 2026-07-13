@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -17,13 +17,17 @@ type FilterChip = 'all' | '2020s';
   styleUrl: './album-search.scss',
 })
 export class AlbumSearch implements OnInit, OnDestroy {
-  query = '';
-  results: AlbumSearchResult[] = [];
-  loading = false;
-  searched = false;
-  errorMessage: string | null = null;
-
-  activeFilter: FilterChip = 'all';
+  // ⚠️ Este proyecto corre Angular en modo zoneless (no hay zone.js en
+  // package.json). Mutar propiedades planas dentro de un .subscribe()
+  // no dispara change detection ahí — solo signals (o el async pipe)
+  // le avisan al framework que hay que repintar. Por eso todo el
+  // estado reactivo de este componente va en signals.
+  query = signal('');
+  results = signal<AlbumSearchResult[]>([]);
+  loading = signal(false);
+  searched = signal(false);
+  errorMessage = signal<string | null>(null);
+  activeFilter = signal<FilterChip>('all');
 
   private queryChanged = new Subject<string>();
 
@@ -40,28 +44,28 @@ export class AlbumSearch implements OnInit, OnDestroy {
         switchMap((q) => {
           const trimmed = q.trim();
           if (!trimmed) {
-            this.loading = false;
-            this.searched = false;
-            this.results = [];
+            this.loading.set(false);
+            this.searched.set(false);
+            this.results.set([]);
             // No golpeamos el backend con q="": cortamos con null y lo
             // filtramos en el subscribe de abajo.
             return of(null);
           }
-          this.loading = true;
-          this.errorMessage = null;
-          const year = this.activeFilter === '2020s' ? '2020' : undefined;
+          this.loading.set(true);
+          this.errorMessage.set(null);
+          const year = this.activeFilter() === '2020s' ? '2020' : undefined;
 
           return this.albumService.search(trimmed, undefined, year).pipe(
-            // IMPORTANTE: el catchError va DENTRO del switchMap. Si un
-            // error de un request individual llegara a explotar hasta
-            // el subscribe de abajo, mataría toda la suscripción al
-            // Subject y ninguna búsqueda posterior volvería a disparar.
+            // catchError DENTRO del switchMap: si se propaga hasta el
+            // subscribe de abajo, mata toda la suscripción al Subject
+            // y ninguna búsqueda posterior vuelve a disparar.
             catchError((err) => {
-              this.errorMessage =
+              this.errorMessage.set(
                 err?.name === 'TimeoutError'
                   ? 'La búsqueda está tardando demasiado. Intenta de nuevo.'
-                  : 'No pudimos completar la búsqueda. Intenta de nuevo.';
-              this.loading = false;
+                  : 'No pudimos completar la búsqueda. Intenta de nuevo.',
+              );
+              this.loading.set(false);
               return of(null);
             }),
           );
@@ -69,11 +73,11 @@ export class AlbumSearch implements OnInit, OnDestroy {
       )
       .subscribe((res) => {
         if (!res) return; // caso q="" o error, ya manejados arriba
-        this.searched = true;
+        this.searched.set(true);
         // El backend real devuelve un array plano (List<AlbumResponse>),
         // no { results: [...] } como documenta el contrato v1.0.
-        this.results = res ?? [];
-        this.loading = false;
+        this.results.set(res ?? []);
+        this.loading.set(false);
       });
   }
 
@@ -82,15 +86,15 @@ export class AlbumSearch implements OnInit, OnDestroy {
   }
 
   onQueryInput(value: string): void {
-    this.query = value;
+    this.query.set(value);
     this.queryChanged.next(value);
   }
 
   selectFilter(filter: FilterChip): void {
-    this.activeFilter = filter;
+    this.activeFilter.set(filter);
     // Reaplicamos la búsqueda actual con el filtro nuevo (si hay texto).
-    if (this.query.trim()) {
-      this.queryChanged.next(this.query);
+    if (this.query().trim()) {
+      this.queryChanged.next(this.query());
     }
   }
 

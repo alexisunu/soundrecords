@@ -13,10 +13,10 @@
 </div>
 
 <div class="album-detail-main">
-  <div class="detail-status" *ngIf="loadingAlbum">Cargando álbum…</div>
-  <div class="detail-status error" *ngIf="!loadingAlbum && albumError">{{ albumError }}</div>
+  <div class="detail-status" *ngIf="loadingAlbum()">Cargando álbum…</div>
+  <div class="detail-status error" *ngIf="!loadingAlbum() && albumError()">{{ albumError() }}</div>
 
-  <ng-container *ngIf="!loadingAlbum && !albumError && album as a">
+  <ng-container *ngIf="!loadingAlbum() && !albumError() && album() as a">
     <div class="album-hero">
       <img *ngIf="a.coverUrl" class="album-hero-art" [src]="a.coverUrl" [alt]="a.name" />
       <div *ngIf="!a.coverUrl" class="album-hero-art-placeholder">
@@ -39,7 +39,7 @@
           <div class="rating-detail">
             <app-star-rating [rating]="a.platformRating ?? 0"></app-star-rating>
             <div class="review-count">
-              {{ a.platformReviewsCount ?? totalReviews }} reseñas en la plataforma
+              {{ a.platformReviewsCount ?? totalReviews() }} reseñas en la plataforma
             </div>
           </div>
         </div>
@@ -73,16 +73,16 @@
     <div class="reviews-section">
       <div class="reviews-header">
         <div class="section-title" style="margin:0;">Reseñas de la comunidad</div>
-        <span class="reviews-total" *ngIf="!loadingReviews">{{ totalReviews }} en total</span>
+        <span class="reviews-total" *ngIf="!loadingReviews()">{{ totalReviews() }} en total</span>
       </div>
 
-      <div class="detail-status" *ngIf="loadingReviews">Cargando reseñas…</div>
-      <div class="detail-status" *ngIf="!loadingReviews && reviews.length === 0">
+      <div class="detail-status" *ngIf="loadingReviews()">Cargando reseñas…</div>
+      <div class="detail-status" *ngIf="!loadingReviews() && reviews().length === 0">
         Aún no hay reseñas para este álbum. Sé el primero en reseñarlo.
       </div>
 
-      <div class="reviews-list" *ngIf="!loadingReviews && reviews.length > 0">
-        <app-review-card *ngFor="let review of reviews" [review]="review"></app-review-card>
+      <div class="reviews-list" *ngIf="!loadingReviews() && reviews().length > 0">
+        <app-review-card *ngFor="let review of reviews()" [review]="review"></app-review-card>
       </div>
     </div>
   </ng-container>
