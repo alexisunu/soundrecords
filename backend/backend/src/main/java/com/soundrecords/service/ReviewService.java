@@ -65,4 +65,39 @@ public class ReviewService {
 
         return saved;
     }
+
+    @Transactional
+    public Review updateReview(org.springframework.security.core.userdetails.UserDetails principal, java.util.UUID reviewId, com.soundrecords.dto.ReviewUpdateRequest request, com.soundrecords.model.User user) {
+        // NOTE: keeping signature to accept principal but use user for ownership checks
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new IllegalArgumentException("Review not found"));
+
+        if (!review.getUser().getId().equals(user.getId())) {
+            throw new org.springframework.security.access.AccessDeniedException("Not the owner of the review");
+        }
+
+        review.setRating(request.getRating());
+        review.setContent(request.getContent());
+        Review saved = reviewRepository.save(review);
+
+        // recalcular promedio
+        reviewRepository.findAverageRatingBySpotifyAlbumId(review.getSpotifyAlbumId());
+
+        return saved;
+    }
+
+    @Transactional
+    public void deleteReview(com.soundrecords.model.User user, java.util.UUID reviewId) {
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new IllegalArgumentException("Review not found"));
+
+        if (!review.getUser().getId().equals(user.getId())) {
+            throw new org.springframework.security.access.AccessDeniedException("Not the owner of the review");
+        }
+
+        reviewRepository.delete(review);
+
+        // recalcular promedio
+        reviewRepository.findAverageRatingBySpotifyAlbumId(review.getSpotifyAlbumId());
+    }
 }

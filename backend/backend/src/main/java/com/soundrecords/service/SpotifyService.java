@@ -87,6 +87,7 @@ public class SpotifyService {
         }
 
         // Llamada a Spotify Search API — URL construida directamente
+        // Reemplaza tu string actual por este:
         String url = "https://api.spotify.com/v1/search?q="
                 + fullQuery.toString().replace(" ", "%20")
                 + "&type=album&limit=10&market=CO";
