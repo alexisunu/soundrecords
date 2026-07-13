@@ -1,6 +1,9 @@
 package com.soundrecords.config;
 
 import com.soundrecords.security.JwtFilter;
+import com.soundrecords.security.JwtUtil;
+import com.soundrecords.security.UserDetailsServiceImpl;
+
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.security.config.Customizer;
@@ -26,10 +29,12 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final JwtFilter jwtFilter;
+    private final JwtUtil jwtUtil;
+    private final UserDetailsServiceImpl userDetailsService;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        JwtFilter jwtFilter = new JwtFilter(jwtUtil, userDetailsService);
         http
             .cors(Customizer.withDefaults())
             .csrf(csrf -> csrf.disable())
@@ -42,7 +47,8 @@ public class SecurityConfig {
                     "/api/auth/login",
                     "/api/auth/me",
                     "/api/spotify/albums/**",
-                    "/api/spotify/search/**"
+                    "/api/spotify/search/**",
+                    "/api/reviews/**"
                 ).permitAll()
                 // Todo lo demás requiere token válido
                 .anyRequest().authenticated()

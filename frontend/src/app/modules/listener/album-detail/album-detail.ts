@@ -22,8 +22,9 @@ export class AlbumDetail implements OnInit, OnDestroy {
   // Todo el estado que se lee en el template va en signals.
   album = signal<AlbumDetailModel | null>(null);
   reviews = signal<Review[]>([]);
-  averageRating = signal(0);
+  averageRating = signal<number | null>(null);
   totalReviews = signal(0);
+  myReview = signal<Review | null>(null);
 
   loadingAlbum = signal(true);
   loadingReviews = signal(true);
@@ -59,6 +60,7 @@ export class AlbumDetail implements OnInit, OnDestroy {
 
     this.albumService.getById(spotifyAlbumId).subscribe({
       next: (album) => {
+        console.log('Respuesta de álbum:', album);
         this.album.set(album);
         this.loadingAlbum.set(false);
       },
@@ -74,9 +76,12 @@ export class AlbumDetail implements OnInit, OnDestroy {
 
     this.reviewService.getAlbumReviews(spotifyAlbumId).subscribe({
       next: (res) => {
+        console.log('Respuesta de reseñas:', res);
         this.reviews.set(res.reviews);
-        this.averageRating.set(res.averageRating);
-        this.totalReviews.set(res.totalReviews);
+        // averageRating puede ser null si no hay reseñas
+        this.averageRating.set(res.averageRating ?? null);
+        this.totalReviews.set(res.totalReviews ?? 0);
+        this.myReview.set(res.myReview ?? null);
         this.loadingReviews.set(false);
       },
       error: () => {
@@ -95,6 +100,7 @@ export class AlbumDetail implements OnInit, OnDestroy {
 
   get formattedRating(): string {
     const rating = this.album()?.platformRating ?? this.averageRating();
-    return rating ? rating.toFixed(1) : '—';
+    // rating puede ser null o 0; queremos '—' sólo si null
+    return rating == null ? '—' : rating.toFixed(1);
   }
 }
