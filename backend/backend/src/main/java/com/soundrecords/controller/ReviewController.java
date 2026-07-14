@@ -1,5 +1,6 @@
 package com.soundrecords.controller;
 
+import com.soundrecords.dto.AlbumReviewsResponse;
 import com.soundrecords.dto.ReviewCreateResponse;
 import com.soundrecords.dto.ReviewRequest;
 import com.soundrecords.model.User;
@@ -10,6 +11,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -56,6 +59,16 @@ public class ReviewController {
         } catch (Exception ex) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to create review");
         }
+    }
+
+    @GetMapping("/album/{spotifyAlbumId}")
+    public ResponseEntity<AlbumReviewsResponse> getAlbumReviews(
+            @AuthenticationPrincipal User user,
+            @PathVariable("spotifyAlbumId") String spotifyAlbumId
+    ) {
+        // Permitir peticiones públicas: si user es null, devolver igualmente reviews/avg/total;
+        // si viene auth válida, reviewService podrá incluir myReview.
+        return ResponseEntity.ok(reviewService.getAlbumReviews(spotifyAlbumId, user));
     }
 
     @PutMapping("/{id}")

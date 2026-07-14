@@ -1,15 +1,10 @@
 package com.soundrecords.dto;
 
-import lombok.Builder;
 import lombok.Data;
 
-import java.util.UUID;
-
 @Data
-@Builder
-public class UserResponse {
+public class UserProfileUpdateRequest {
 
-    private UUID id;
     private String username;
     private String bio;
     private String photoUrl;
