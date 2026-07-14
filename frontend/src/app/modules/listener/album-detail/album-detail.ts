@@ -1,18 +1,21 @@
 import { Component, OnDestroy, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { AlbumService } from '../../../core/services/album';
 import { ReviewService } from '../../../core/services/review';
+import { CollectionService } from '../../../core/services/collection';
 import { AlbumDetail as AlbumDetailModel } from '../../../core/models/album.model';
 import { Review } from '../../../core/models/review.model';
+import { Collection } from '../../../core/models/collection.model';
 import { ReviewCard } from '../../../shared/review-card/review-card';
 import { StarRating } from '../../../shared/star-rating/star-rating';
 
 @Component({
   selector: 'app-album-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule, ReviewCard, StarRating],
+  imports: [CommonModule, FormsModule, RouterModule, ReviewCard, StarRating],
   templateUrl: './album-detail.html',
   styleUrl: './album-detail.scss',
 })
@@ -31,10 +34,27 @@ export class AlbumDetail implements OnInit, OnDestroy {
 
   private paramsSub?: Subscription;
 
+  // --- "Guardar en lista" ---------------------------------------
+  // ⚠️ El contrato no expone qué álbumes tiene cada lista (ver nota en
+  // collection.model.ts), así que no podemos marcar de entrada "esta
+  // lista ya tiene este álbum". Solo reflejamos lo que el usuario
+  // agrega DURANTE esta sesión (addedListIds), no un estado persistido
+  // real recuperado del backend.
+  showListPicker = signal(false);
+  myCollections = signal<Collection[]>([]);
+  loadingCollections = signal(false);
+  pickerError = signal<string | null>(null);
+  addingToListId = signal<string | null>(null);
+  addedListIds = signal<Set<string>>(new Set());
+
+  newListName = signal('');
+  creatingList = signal(false);
+
   constructor(
     private route: ActivatedRoute,
     private albumService: AlbumService,
     private reviewService: ReviewService,
+    private collectionService: CollectionService,
   ) {}
 
   ngOnInit(): void {
@@ -56,6 +76,8 @@ export class AlbumDetail implements OnInit, OnDestroy {
     this.albumError.set(null);
     this.album.set(null);
     this.reviews.set([]);
+    this.showListPicker.set(false);
+    this.addedListIds.set(new Set());
 
     this.albumService.getById(spotifyAlbumId).subscribe({
       next: (album) => {
@@ -96,5 +118,79 @@ export class AlbumDetail implements OnInit, OnDestroy {
   get formattedRating(): string {
     const rating = this.album()?.platformRating ?? this.averageRating();
     return rating ? rating.toFixed(1) : '—';
+  }
+
+  toggleListPicker(): void {
+    const next = !this.showListPicker();
+    this.showListPicker.set(next);
+    if (next && this.myCollections().length === 0) {
+      this.loadCollections();
+    }
+  }
+
+  private loadCollections(): void {
+    this.loadingCollections.set(true);
+    this.pickerError.set(null);
+    this.collectionService.getMyCollections().subscribe({
+      next: (res) => {
+        this.myCollections.set(res.collections);
+        this.loadingCollections.set(false);
+      },
+      error: () => {
+        this.pickerError.set('No pudimos cargar tus listas.');
+        this.loadingCollections.set(false);
+      },
+    });
+  }
+
+  addToList(collection: Collection): void {
+    const album = this.album();
+    if (!album || this.addingToListId()) return;
+
+    this.addingToListId.set(collection.id);
+    this.collectionService.addAlbum(collection.id, album.spotifyAlbumId).subscribe({
+      next: () => {
+        this.addingToListId.set(null);
+        this.markAsAdded(collection.id);
+      },
+      error: (err) => {
+        this.addingToListId.set(null);
+        if (err?.status === 409) {
+          // Ya estaba en la lista: para el usuario es el mismo
+          // resultado que "agregar", así que lo marcamos igual.
+          this.markAsAdded(collection.id);
+          return;
+        }
+        this.pickerError.set('No pudimos agregar el álbum a esta lista.');
+      },
+    });
+  }
+
+  private markAsAdded(collectionId: string): void {
+    const updated = new Set(this.addedListIds());
+    updated.add(collectionId);
+    this.addedListIds.set(updated);
+  }
+
+  createListAndAdd(): void {
+    const name = this.newListName().trim();
+    const album = this.album();
+    if (!name || !album || this.creatingList()) return;
+
+    this.creatingList.set(true);
+    this.pickerError.set(null);
+
+    this.collectionService.create({ name }).subscribe({
+      next: (created) => {
+        this.myCollections.update((current) => [created, ...current]);
+        this.newListName.set('');
+        this.creatingList.set(false);
+        this.addToList(created);
+      },
+      error: () => {
+        this.creatingList.set(false);
+        this.pickerError.set('No pudimos crear la lista.');
+      },
+    });
   }
 }

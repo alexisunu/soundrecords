@@ -1,1 +1,89 @@
-<p>collections works!</p>
+<!--
+  VISTA 9 del mockup (MU_1.html) — CU-16. Se monta dentro de MainLayout.
+-->
+<div class="topbar">
+  <div class="topbar-row">
+    <h1>Mis listas</h1>
+  </div>
+</div>
+
+<div class="lists-content">
+  <div class="lists-header">
+    <div class="lists-count" *ngIf="!loading()">
+      {{ lists().length }} colección{{ lists().length === 1 ? '' : 'es' }} creada{{ lists().length === 1 ? '' : 's' }}
+    </div>
+    <button class="btn-primary" (click)="openCreateModal()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M12 5v14M5 12h14" />
+      </svg>
+      Nueva lista
+    </button>
+  </div>
+
+  <div class="lists-status" *ngIf="loading()">Cargando tus listas…</div>
+  <div class="lists-status error" *ngIf="!loading() && errorMessage()">{{ errorMessage() }}</div>
+
+  <div class="lists-grid" *ngIf="!loading() && !errorMessage()">
+    <div class="list-card" *ngFor="let list of lists()" [class.deleting]="deletingId() === list.id">
+      <button class="list-delete-btn" title="Eliminar lista" (click)="deleteList(list); $event.stopPropagation()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 6L6 18M6 6l12 12" />
+        </svg>
+      </button>
+
+      <!-- Los "covers" son decorativos: el contrato no expone los
+           álbumes reales de la lista (ver nota en collection.model.ts),
+           así que solo damos una pista visual según albumsCount. -->
+      <div class="list-covers">
+        <div class="list-cover-thumb" *ngFor="let _ of coverThumbs(list)"></div>
+      </div>
+      <div class="list-title">{{ list.name }}</div>
+      <div class="list-meta">{{ list.albumsCount }} álbum{{ list.albumsCount === 1 ? '' : 'es' }}</div>
+      <div class="list-desc" *ngIf="list.description">{{ list.description }}</div>
+    </div>
+
+    <div class="list-card list-card-new" (click)="openCreateModal()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 5v14M5 12h14" />
+      </svg>
+      <span>Crear nueva lista</span>
+    </div>
+  </div>
+</div>
+
+<!-- Modal "Nueva lista" -->
+<div class="modal-overlay" *ngIf="showCreateModal()" (click)="closeCreateModal()">
+  <div class="modal-box" (click)="$event.stopPropagation()">
+    <div class="modal-title">Nueva lista</div>
+
+    <div class="field">
+      <label>Nombre</label>
+      <input
+        type="text"
+        placeholder="Ej. Joyas del rock argentino"
+        [ngModel]="newName()"
+        (ngModelChange)="newName.set($event)"
+        maxlength="100"
+      />
+    </div>
+
+    <div class="field">
+      <label>Descripción <span class="field-hint">(opcional)</span></label>
+      <textarea
+        placeholder="¿De qué se trata esta lista?"
+        [ngModel]="newDescription()"
+        (ngModelChange)="newDescription.set($event)"
+        maxlength="300"
+      ></textarea>
+    </div>
+
+    <div class="modal-error" *ngIf="createError()">{{ createError() }}</div>
+
+    <div class="modal-actions">
+      <button class="btn-ghost" type="button" (click)="closeCreateModal()">Cancelar</button>
+      <button class="btn-primary" type="button" [disabled]="createLoading()" (click)="submitCreate()">
+        {{ createLoading() ? 'Creando…' : 'Crear lista' }}
+      </button>
+    </div>
+  </div>
+</div>

@@ -54,12 +54,57 @@
             </svg>
             {{ a.myReview ? 'Editar mi reseña' : 'Escribir reseña' }}
           </a>
-          <button class="btn-ghost" disabled title="Próximamente">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
-            </svg>
-            Guardar en lista
-          </button>
+          <div class="list-picker-wrap">
+            <button class="btn-ghost" (click)="toggleListPicker()">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
+              </svg>
+              Guardar en lista
+            </button>
+
+            <div class="list-picker" *ngIf="showListPicker()">
+              <div class="list-picker-status" *ngIf="loadingCollections()">Cargando tus listas…</div>
+              <div class="list-picker-status error" *ngIf="!loadingCollections() && pickerError()">
+                {{ pickerError() }}
+              </div>
+              <div class="list-picker-status" *ngIf="!loadingCollections() && myCollections().length === 0 && !pickerError()">
+                Todavía no tienes listas. Crea una abajo.
+              </div>
+
+              <div class="list-picker-items" *ngIf="!loadingCollections() && myCollections().length > 0">
+                <div class="list-picker-item" *ngFor="let list of myCollections()">
+                  <span class="lpi-name">{{ list.name }}</span>
+                  <button
+                    class="lpi-add-btn"
+                    [class.added]="addedListIds().has(list.id)"
+                    [disabled]="addingToListId() === list.id"
+                    (click)="addToList(list)"
+                  >
+                    {{
+                      addedListIds().has(list.id)
+                        ? 'Agregada ✓'
+                        : addingToListId() === list.id
+                          ? '...'
+                          : 'Agregar'
+                    }}
+                  </button>
+                </div>
+              </div>
+
+              <div class="list-picker-new">
+                <input
+                  type="text"
+                  placeholder="Nombre de lista nueva…"
+                  [ngModel]="newListName()"
+                  (ngModelChange)="newListName.set($event)"
+                  maxlength="100"
+                />
+                <button class="btn-ghost" [disabled]="creatingList()" (click)="createListAndAdd()">
+                  {{ creatingList() ? '...' : '+ Crear y agregar' }}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

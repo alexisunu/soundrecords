@@ -186,6 +186,10 @@ frontend/
             review-detail.scss
             review-detail.spec.ts
             review-detail.ts
+          review-editor/
+            review-editor.html
+            review-editor.scss
+            review-editor.ts
           user-profile/
             user-profile.html
             user-profile.scss
@@ -1263,6 +1267,515 @@ import { Component } from '@angular/core';
   styleUrl: './review-detail.scss',
 })
 export class ReviewDetail {}
+</file>
+
+<file path="frontend/src/app/modules/listener/review-editor/review-editor.html">
+<!--
+  VISTA 6 del mockup (MU_1.html) — CU-11 (crear reseña) / CU-12 (editar).
+  Se monta dentro de MainLayout.
+-->
+<div class="topbar">
+  <div class="topbar-row">
+    <h1>{{ isEditMode() ? 'Editar reseña' : 'Escribir reseña' }}</h1>
+  </div>
+</div>
+
+<div class="review-editor-content">
+  <div class="detail-status" *ngIf="loadingAlbum()">Cargando álbum…</div>
+  <div class="detail-status error" *ngIf="!loadingAlbum() && albumError()">{{ albumError() }}</div>
+
+  <ng-container *ngIf="!loadingAlbum() && !albumError() && album() as a">
+    <!-- Álbum seleccionado -->
+    <div class="editor-album-mini">
+      <img *ngIf="a.coverUrl" class="editor-album-art" [src]="a.coverUrl" [alt]="a.name" />
+      <div *ngIf="!a.coverUrl" class="editor-album-art-placeholder">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(143,156,174,0.3)" stroke-width="1.5">
+          <circle cx="12" cy="12" r="10" />
+          <circle cx="12" cy="12" r="3" />
+        </svg>
+      </div>
+      <div style="flex: 1">
+        <div class="editor-album-title">{{ a.name }}</div>
+        <div class="editor-album-artist">
+          {{ a.artist }}<ng-container *ngIf="a.releaseYear"> · {{ a.releaseYear }}</ng-container>
+        </div>
+      </div>
+      <a class="btn-ghost" [routerLink]="['/listener/album-search']">Cambiar álbum</a>
+    </div>
+
+    <!-- Selector de estrellas -->
+    <div style="margin-bottom: 22px">
+      <div class="field-label">Tu calificación</div>
+      <div class="star-selector">
+        <div
+          class="star-sel"
+          *ngFor="let n of [1, 2, 3, 4, 5]"
+          [class.active]="n <= rating()"
+          (click)="selectStar(n)"
+        >
+          <svg viewBox="0 0 24 24">
+            <path d="M12 2l3 6.5 7 .8-5.2 4.9 1.4 7-6.2-3.6-6.2 3.6 1.4-7L2 9.3l7-.8z" />
+          </svg>
+        </div>
+      </div>
+      <div class="star-label">{{ starLabel() }}</div>
+    </div>
+
+    <!-- Editor de texto -->
+    <div class="field">
+      <label
+        >Tu reseña
+        <span class="field-hint">(mín. {{ minContent }} · máx. {{ maxContent }} caracteres)</span></label
+      >
+      <textarea
+        class="editor-textarea"
+        placeholder="Escribe tu opinión sobre el álbum…"
+        [ngModel]="content()"
+        (ngModelChange)="onContentInput($event)"
+      ></textarea>
+      <div class="char-count" [class.warn]="charCount() > maxContent">
+        {{ charCount() }} / {{ maxContent }}
+      </div>
+    </div>
+
+    <div class="submit-error" *ngIf="submitError()">{{ submitError() }}</div>
+
+    <!-- Acciones -->
+    <div class="editor-actions">
+      <button class="btn-ghost" type="button" (click)="cancel()">Cancelar</button>
+      <button class="btn-primary" type="button" [disabled]="!canSubmit()" (click)="submit()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M20 6L9 17l-5-5" />
+        </svg>
+        {{ submitting() ? 'Publicando…' : isEditMode() ? 'Guardar cambios' : 'Publicar reseña' }}
+      </button>
+    </div>
+
+    <div class="mission-toast" *ngIf="missionCompleted() as m">
+      🎉 Misión completada: <strong>{{ m.name }}</strong> · +{{ m.pointsEarned }} puntos
+    </div>
+  </ng-container>
+</div>
+</file>
+
+<file path="frontend/src/app/modules/listener/review-editor/review-editor.scss">
+:host {
+  --bg: #0a1128;
+  --accent: #17d1e8;
+  --accent-2: #9b5de5;
+  --text: #ffffff;
+  --text-secondary: #8f9cae;
+  --card: #131c38;
+  --card-border: rgba(143, 156, 174, 0.14);
+  --accent-glow: rgba(23, 209, 232, 0.25);
+  --danger: #f15f6c;
+  --success: #2ee89a;
+
+  display: block;
+  font-family: 'Inter', sans-serif;
+  color: var(--text);
+}
+
+.topbar {
+  padding: 28px 28px 18px;
+}
+.topbar-row h1 {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.review-editor-content {
+  padding: 0 28px 60px;
+  max-width: 560px;
+}
+
+.detail-status {
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  padding: 20px 0;
+}
+.detail-status.error {
+  color: var(--danger);
+}
+
+.editor-album-mini {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 22px;
+}
+.editor-album-art {
+  width: 60px;
+  height: 60px;
+  border-radius: 10px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.editor-album-art-placeholder {
+  width: 60px;
+  height: 60px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #1b2750, #0d1430);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.editor-album-title {
+  font-size: 15px;
+  font-weight: 700;
+}
+.editor-album-artist {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+}
+
+.field-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+
+.star-selector {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.star-sel {
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+.star-sel:hover {
+  transform: scale(1.15);
+}
+.star-sel svg {
+  width: 28px;
+  height: 28px;
+  fill: rgba(143, 156, 174, 0.3);
+  color: rgba(143, 156, 174, 0.3);
+}
+.star-sel.active svg {
+  fill: var(--accent);
+  color: var(--accent);
+}
+.star-label {
+  font-size: 13px;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.field {
+  margin-bottom: 8px;
+}
+.field label {
+  font-size: 13px;
+  font-weight: 600;
+  display: block;
+  margin-bottom: 10px;
+}
+.field-hint {
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+.editor-textarea {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 14px;
+  font-size: 13.5px;
+  color: var(--text);
+  font-family: inherit;
+  resize: none;
+  height: 130px;
+  line-height: 1.55;
+}
+.editor-textarea::placeholder {
+  color: var(--text-secondary);
+}
+.editor-textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+.char-count {
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  text-align: right;
+  margin-top: 6px;
+}
+.char-count.warn {
+  color: var(--danger);
+}
+
+.submit-error {
+  font-size: 13px;
+  color: var(--danger);
+  margin-top: 10px;
+}
+
+.editor-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 18px;
+}
+
+.btn-ghost {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  border: 1px solid rgba(23, 209, 232, 0.4);
+  border-radius: 10px;
+  padding: 9px 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: transparent;
+  font-family: inherit;
+  cursor: pointer;
+  text-decoration: none;
+}
+.btn-ghost:hover {
+  background: rgba(23, 209, 232, 0.07);
+}
+
+.btn-primary {
+  font-size: 13px;
+  font-weight: 700;
+  color: #04121c;
+  background: var(--accent);
+  border: none;
+  border-radius: 10px;
+  padding: 10px 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.btn-primary:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+.btn-primary:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.mission-toast {
+  margin-top: 18px;
+  background: rgba(46, 232, 154, 0.1);
+  border: 1px solid rgba(46, 232, 154, 0.35);
+  color: var(--success);
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 600;
+}
+</file>
+
+<file path="frontend/src/app/modules/listener/review-editor/review-editor.ts">
+import { Component, OnInit, computed, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { AlbumService } from '../../../core/services/album';
+import { ReviewService } from '../../../core/services/review';
+import { AlbumDetail } from '../../../core/models/album.model';
+import { MissionCompletedInfo } from '../../../core/models/review.model';
+
+const MIN_CONTENT = 50;
+const MAX_CONTENT = 2000;
+
+@Component({
+  selector: 'app-review-editor',
+  standalone: true,
+  imports: [CommonModule, FormsModule, RouterModule],
+  templateUrl: './review-editor.html',
+  styleUrl: './review-editor.scss',
+})
+export class ReviewEditor implements OnInit {
+  // Estado en signals: la app corre Angular zoneless (sin zone.js), así
+  // que mutar propiedades planas dentro de un .subscribe() no repinta
+  // la vista. Ver notas en album-search.ts / album-detail.ts.
+  album = signal<AlbumDetail | null>(null);
+  loadingAlbum = signal(true);
+  albumError = signal<string | null>(null);
+
+  rating = signal(0);
+  content = signal('');
+
+  submitting = signal(false);
+  submitError = signal<string | null>(null);
+  missionCompleted = signal<MissionCompletedInfo | null>(null);
+  justPublished = signal(false);
+
+  readonly minContent = MIN_CONTENT;
+  readonly maxContent = MAX_CONTENT;
+
+  // true si el usuario ya tenía una reseña para este álbum (myReview
+  // != null): en ese caso el submit hace PUT en vez de POST.
+  isEditMode = computed(() => !!this.album()?.myReview);
+
+  charCount = computed(() => this.content().length);
+
+  canSubmit = computed(() => {
+    const len = this.content().trim().length;
+    return (
+      this.rating() >= 1 &&
+      this.rating() <= 5 &&
+      len >= MIN_CONTENT &&
+      this.content().length <= MAX_CONTENT &&
+      !this.submitting()
+    );
+  });
+
+  starLabel = computed(() => {
+    const labels: Record<number, string> = {
+      1: 'Muy malo (1/5)',
+      2: 'Malo (2/5)',
+      3: 'Regular (3/5)',
+      4: 'Bueno (4/5)',
+      5: 'Muy bueno (5/5)',
+    };
+    return labels[this.rating()] ?? 'Selecciona una calificación';
+  });
+
+  private spotifyAlbumId = '';
+
+  constructor(
+    private route: ActivatedRoute,
+    private router: Router,
+    private albumService: AlbumService,
+    private reviewService: ReviewService,
+  ) {}
+
+  ngOnInit(): void {
+    const id = this.route.snapshot.paramMap.get('id');
+    if (!id) {
+      this.albumError.set('No se especificó ningún álbum.');
+      this.loadingAlbum.set(false);
+      return;
+    }
+    this.spotifyAlbumId = id;
+    this.loadAlbum(id);
+  }
+
+  private loadAlbum(id: string): void {
+    this.loadingAlbum.set(true);
+    this.albumError.set(null);
+
+    this.albumService.getById(id).subscribe({
+      next: (album) => {
+        this.album.set(album);
+        this.loadingAlbum.set(false);
+
+        // Si ya existe una reseña mía, precargamos el formulario en
+        // modo edición para no chocar con el 409 del contrato
+        // ("ya existe reseña del usuario para ese álbum").
+        if (album.myReview) {
+          this.rating.set(album.myReview.rating ?? 0);
+          this.content.set(album.myReview.content ?? '');
+        }
+      },
+      error: (err) => {
+        this.albumError.set(
+          err?.name === 'TimeoutError'
+            ? 'La carga está tardando demasiado. Intenta de nuevo.'
+            : 'No pudimos cargar este álbum. Puede que ya no exista en Spotify.',
+        );
+        this.loadingAlbum.set(false);
+      },
+    });
+  }
+
+  selectStar(n: number): void {
+    this.rating.set(n);
+  }
+
+  onContentInput(value: string): void {
+    this.content.set(value);
+  }
+
+  submit(): void {
+    if (!this.canSubmit()) return;
+    const album = this.album();
+    if (!album) return;
+
+    this.submitting.set(true);
+    this.submitError.set(null);
+
+    if (this.isEditMode() && album.myReview) {
+      this.reviewService.update(album.myReview.id, { rating: this.rating(), content: this.content() }).subscribe({
+        next: () => {
+          this.submitting.set(false);
+          this.justPublished.set(true);
+          this.goBackToAlbum();
+        },
+        error: (err) => this.handleSubmitError(err),
+      });
+      return;
+    }
+
+    this.reviewService
+      .create({
+        spotifyAlbumId: this.spotifyAlbumId,
+        albumName: album.name,
+        artistName: album.artist,
+        coverUrl: album.coverUrl ?? '',
+        rating: this.rating(),
+        content: this.content(),
+      })
+      .subscribe({
+        next: (res) => {
+          this.submitting.set(false);
+          this.justPublished.set(true);
+          if (res.missionCompleted) {
+            this.missionCompleted.set(res.missionCompleted);
+            // Dejamos ver el aviso de misión completada un momento
+            // antes de volver al álbum.
+            setTimeout(() => this.goBackToAlbum(), 1800);
+          } else {
+            this.goBackToAlbum();
+          }
+        },
+        error: (err) => this.handleSubmitError(err),
+      });
+  }
+
+  private handleSubmitError(err: any): void {
+    this.submitting.set(false);
+    if (err?.status === 409) {
+      // Carrera rara: alguien más publicó desde otra pestaña justo
+      // antes. Recargamos el álbum para caer en modo edición.
+      this.submitError.set('Ya tienes una reseña para este álbum. Recargando para editarla…');
+      this.loadAlbum(this.spotifyAlbumId);
+      return;
+    }
+    if (err?.status === 400) {
+      this.submitError.set(
+        err?.error?.message ?? 'Revisa la calificación y el texto: hay datos inválidos.',
+      );
+      return;
+    }
+    this.submitError.set('No pudimos publicar tu reseña. Intenta de nuevo.');
+  }
+
+  cancel(): void {
+    this.goBackToAlbum();
+  }
+
+  private goBackToAlbum(): void {
+    this.router.navigate(['/listener/album', this.spotifyAlbumId]);
+  }
+}
 </file>
 
 <file path="frontend/src/app/modules/listener/user-profile/user-profile.html">
@@ -3921,211 +4434,6 @@ export class SettingsComponent implements OnInit {
 }
 </file>
 
-<file path="frontend/src/app/modules/listener/album-detail/album-detail.scss">
-:host {
-  --bg: #0a1128;
-  --accent: #17d1e8;
-  --accent-2: #9b5de5;
-  --text: #ffffff;
-  --text-secondary: #8f9cae;
-  --card: #131c38;
-  --card-border: rgba(143, 156, 174, 0.14);
-  --accent-glow: rgba(23, 209, 232, 0.25);
-  --danger: #f15f6c;
-  --success: #2ee89a;
-
-  display: block;
-  font-family: 'Inter', sans-serif;
-  color: var(--text);
-}
-
-.topbar {
-  padding: 28px 28px 18px;
-}
-.back-link {
-  color: var(--text-secondary);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13.5px;
-  cursor: pointer;
-  text-decoration: none;
-}
-.back-link:hover {
-  color: var(--text);
-}
-
-.album-detail-main {
-  padding: 0 28px 60px;
-}
-
-.detail-status {
-  font-size: 13.5px;
-  color: var(--text-secondary);
-  padding: 20px 0;
-}
-.detail-status.error {
-  color: var(--danger);
-}
-
-.album-hero {
-  display: flex;
-  gap: 28px;
-  margin-bottom: 32px;
-  flex-wrap: wrap;
-}
-.album-hero-art {
-  width: 200px;
-  height: 200px;
-  border-radius: 16px;
-  object-fit: cover;
-  flex-shrink: 0;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-}
-.album-hero-art-placeholder {
-  width: 200px;
-  height: 200px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, #1b2750, #0d1430);
-  flex-shrink: 0;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.album-meta {
-  min-width: 240px;
-}
-.album-meta .eyebrow {
-  font-size: 11.5px;
-  font-weight: 600;
-  color: var(--accent);
-  letter-spacing: 1px;
-  margin-bottom: 6px;
-}
-.album-meta h2 {
-  font-size: 28px;
-  font-weight: 700;
-  margin-bottom: 6px;
-}
-.album-meta .artist {
-  font-size: 16px;
-  color: var(--text-secondary);
-  margin-bottom: 4px;
-}
-.album-meta .year-genre {
-  font-size: 13px;
-  color: var(--text-secondary);
-}
-.album-rating-row {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin: 16px 0;
-}
-.big-rating {
-  font-size: 36px;
-  font-weight: 700;
-  font-family: 'JetBrains Mono', monospace;
-  color: var(--accent);
-}
-.rating-detail {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.review-count {
-  font-size: 12.5px;
-  color: var(--text-secondary);
-}
-.album-actions {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.btn-ghost {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--accent);
-  border: 1px solid rgba(23, 209, 232, 0.4);
-  border-radius: 10px;
-  padding: 9px 18px;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  background: transparent;
-  font-family: inherit;
-  cursor: pointer;
-}
-.btn-ghost:hover:not(:disabled) {
-  background: rgba(23, 209, 232, 0.07);
-}
-.btn-ghost:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
-
-.section-divider {
-  height: 1px;
-  background: var(--card-border);
-  margin: 28px 0;
-}
-.section-title {
-  font-size: 17px;
-  font-weight: 700;
-  margin-bottom: 16px;
-}
-
-.tracklist {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.track-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 9px 12px;
-  border-radius: 8px;
-}
-.track-row:hover {
-  background: rgba(143, 156, 174, 0.06);
-}
-.track-num {
-  width: 20px;
-  font-size: 12px;
-  color: var(--text-secondary);
-  font-family: 'JetBrains Mono', monospace;
-  text-align: right;
-  flex-shrink: 0;
-}
-.track-title {
-  flex: 1;
-  font-size: 13.5px;
-  font-weight: 500;
-}
-
-.reviews-section {
-  margin-top: 28px;
-}
-.reviews-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 18px;
-}
-.reviews-total {
-  font-size: 12.5px;
-  color: var(--text-secondary);
-}
-.reviews-list {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-</file>
-
 <file path="frontend/src/app/modules/listener/album-search/album-search.scss">
 :host {
   --bg: #0a1128;
@@ -6113,65 +6421,6 @@ export const jwtInterceptor: HttpInterceptorFn = (req, next) => {
 };
 </file>
 
-<file path="frontend/src/app/core/models/album.model.ts">
-/**
- * Coincide con las respuestas de SpotifyController (/api/spotify) del
- * API Contract v1.0. El backend combina la ficha de Spotify con el
- * rating/reviews propios de la BD.
- */
-
-export interface AlbumSearchResult {
-  spotifyAlbumId: string;
-  name: string;
-  artist: string;
-  coverUrl?: string;
-  /**
-   * ⚠️ El contrato lo documenta como number, pero el backend real de
-   * Alexis lo está devolviendo como string (ver payload de ejemplo:
-   * "releaseYear": "1982"). Se deja como string | number para no
-   * romper si lo corrigen más adelante.
-   */
-  releaseYear?: string | number;
-  platformRating?: number | null;
-  platformReviewsCount?: number | null;
-  /**
-   * Estos dos campos no están en la sección de "Response 200" de
-   * /api/spotify/search del contrato v1.0, pero el backend real ya los
-   * está mandando en cada resultado (ver payload de ejemplo compartido
-   * por Alexis). Se dejan opcionales por si algún día dejan de venir.
-   */
-  tracklist?: string[] | null;
-  myReview?: unknown | null;
-}
-
-/**
- * ⚠️ DESVIACIÓN DEL CONTRATO v1.0: el contrato documenta la respuesta de
- * GET /api/spotify/search como { "results": [...] }, pero el backend
- * real de Alexis devuelve un ResponseEntity<List<AlbumResponse>>, es
- * decir un array plano. Por eso el service ya NO usa un wrapper tipo
- * AlbumSearchResponse; search() retorna AlbumSearchResult[] directo.
- * Si el backend llega a "corregirse" para envolver en results, hay que
- * revertir este cambio en album.ts.
- */
-
-export interface AlbumDetail {
-  spotifyAlbumId: string;
-  name: string;
-  artist: string;
-  coverUrl?: string;
-  releaseYear?: string | number;
-  tracklist?: string[] | null;
-  platformRating?: number | null;
-  platformReviewsCount?: number | null;
-  /**
-   * Reseña del usuario actual para este álbum, o null si no ha
-   * reseñado. El contrato no especifica el shape exacto, así que se
-   * deja como unknown hasta que el backend lo confirme.
-   */
-  myReview?: unknown | null;
-}
-</file>
-
 <file path="frontend/src/app/core/services/album.ts">
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
@@ -6219,96 +6468,228 @@ export class AlbumService {
 }
 </file>
 
-<file path="frontend/src/app/modules/listener/album-detail/album-detail.html">
-<!--
-  VISTA 5 del mockup (MU_1.html). Se monta dentro de MainLayout.
--->
-<div class="topbar">
-  <div class="topbar-row">
-    <a class="back-link" routerLink="/listener/album-search">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M15 18l-6-6 6-6" />
-      </svg>
-      Buscar
-    </a>
-  </div>
-</div>
+<file path="frontend/src/app/modules/listener/album-detail/album-detail.scss">
+:host {
+  --bg: #0a1128;
+  --accent: #17d1e8;
+  --accent-2: #9b5de5;
+  --text: #ffffff;
+  --text-secondary: #8f9cae;
+  --card: #131c38;
+  --card-border: rgba(143, 156, 174, 0.14);
+  --accent-glow: rgba(23, 209, 232, 0.25);
+  --danger: #f15f6c;
+  --success: #2ee89a;
 
-<div class="album-detail-main">
-  <div class="detail-status" *ngIf="loadingAlbum()">Cargando álbum…</div>
-  <div class="detail-status error" *ngIf="!loadingAlbum() && albumError()">{{ albumError() }}</div>
+  display: block;
+  font-family: 'Inter', sans-serif;
+  color: var(--text);
+}
 
-  <ng-container *ngIf="!loadingAlbum() && !albumError() && album() as a">
-    <div class="album-hero">
-      <img *ngIf="a.coverUrl" class="album-hero-art" [src]="a.coverUrl" [alt]="a.name" />
-      <div *ngIf="!a.coverUrl" class="album-hero-art-placeholder">
-        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="rgba(143,156,174,0.3)" stroke-width="1.2">
-          <circle cx="12" cy="12" r="10" />
-          <circle cx="12" cy="12" r="3" />
-        </svg>
-      </div>
-      <div class="album-meta">
-        <div class="eyebrow">ÁLBUM</div>
-        <h2>{{ a.name }}</h2>
-        <div class="artist">{{ a.artist }}</div>
-        <div class="year-genre">
-          <ng-container *ngIf="a.releaseYear">{{ a.releaseYear }}</ng-container>
-          <ng-container *ngIf="tracklist.length"> · {{ tracklist.length }} pistas</ng-container>
-        </div>
+.topbar {
+  padding: 28px 28px 18px;
+}
+.back-link {
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13.5px;
+  cursor: pointer;
+  text-decoration: none;
+}
+.back-link:hover {
+  color: var(--text);
+}
 
-        <div class="album-rating-row" *ngIf="a.platformRating != null">
-          <div class="big-rating">{{ formattedRating }}</div>
-          <div class="rating-detail">
-            <app-star-rating [rating]="a.platformRating ?? 0"></app-star-rating>
-            <div class="review-count">
-              {{ a.platformReviewsCount ?? totalReviews() }} reseñas en la plataforma
-            </div>
-          </div>
-        </div>
-        <div class="album-rating-row" *ngIf="a.platformRating == null">
-          <div class="review-count">Todavía no tiene reseñas en la plataforma. ¡Sé el primero!</div>
-        </div>
+.album-detail-main {
+  padding: 0 28px 60px;
+}
 
-        <div class="album-actions">
-          <button class="btn-ghost" disabled title="Próximamente">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
-            </svg>
-            Guardar en lista
-          </button>
-        </div>
-      </div>
-    </div>
+.detail-status {
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  padding: 20px 0;
+}
+.detail-status.error {
+  color: var(--danger);
+}
 
-    <ng-container *ngIf="tracklist.length">
-      <div class="section-divider"></div>
-      <div class="section-title">Tracklist</div>
-      <div class="tracklist">
-        <div class="track-row" *ngFor="let track of tracklist; let i = index">
-          <span class="track-num">{{ i + 1 }}</span>
-          <span class="track-title">{{ track }}</span>
-        </div>
-      </div>
-    </ng-container>
+.album-hero {
+  display: flex;
+  gap: 28px;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+}
+.album-hero-art {
+  width: 200px;
+  height: 200px;
+  border-radius: 16px;
+  object-fit: cover;
+  flex-shrink: 0;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+.album-hero-art-placeholder {
+  width: 200px;
+  height: 200px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #1b2750, #0d1430);
+  flex-shrink: 0;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.album-meta {
+  min-width: 240px;
+}
+.album-meta .eyebrow {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+}
+.album-meta h2 {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.album-meta .artist {
+  font-size: 16px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+.album-meta .year-genre {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.album-rating-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 16px 0;
+}
+.big-rating {
+  font-size: 36px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+}
+.rating-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.review-count {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+}
+.album-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
 
-    <div class="section-divider"></div>
-    <div class="reviews-section">
-      <div class="reviews-header">
-        <div class="section-title" style="margin:0;">Reseñas de la comunidad</div>
-        <span class="reviews-total" *ngIf="!loadingReviews()">{{ totalReviews() }} en total</span>
-      </div>
+.btn-ghost {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  border: 1px solid rgba(23, 209, 232, 0.4);
+  border-radius: 10px;
+  padding: 9px 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: transparent;
+  font-family: inherit;
+  cursor: pointer;
+}
+.btn-ghost:hover:not(:disabled) {
+  background: rgba(23, 209, 232, 0.07);
+}
+.btn-ghost:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
 
-      <div class="detail-status" *ngIf="loadingReviews()">Cargando reseñas…</div>
-      <div class="detail-status" *ngIf="!loadingReviews() && reviews().length === 0">
-        Aún no hay reseñas para este álbum. Sé el primero en reseñarlo.
-      </div>
+.btn-primary {
+  font-size: 13px;
+  font-weight: 700;
+  color: #04121c;
+  background: var(--accent);
+  border: none;
+  border-radius: 10px;
+  padding: 10px 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  font-family: inherit;
+  text-decoration: none;
+}
+.btn-primary:hover {
+  filter: brightness(1.08);
+}
 
-      <div class="reviews-list" *ngIf="!loadingReviews() && reviews().length > 0">
-        <app-review-card *ngFor="let review of reviews()" [review]="review"></app-review-card>
-      </div>
-    </div>
-  </ng-container>
-</div>
+.section-divider {
+  height: 1px;
+  background: var(--card-border);
+  margin: 28px 0;
+}
+.section-title {
+  font-size: 17px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.tracklist {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.track-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 12px;
+  border-radius: 8px;
+}
+.track-row:hover {
+  background: rgba(143, 156, 174, 0.06);
+}
+.track-num {
+  width: 20px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-family: 'JetBrains Mono', monospace;
+  text-align: right;
+  flex-shrink: 0;
+}
+.track-title {
+  flex: 1;
+  font-size: 13.5px;
+  font-weight: 500;
+}
+
+.reviews-section {
+  margin-top: 28px;
+}
+.reviews-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+.reviews-total {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+}
+.reviews-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
 </file>
 
 <file path="frontend/src/app/modules/listener/album-detail/album-detail.ts">
@@ -6713,6 +7094,168 @@ export class ReviewCard {
 }
 </file>
 
+<file path="frontend/src/app/core/models/album.model.ts">
+/**
+ * Coincide con las respuestas de SpotifyController (/api/spotify) del
+ * API Contract v1.0. El backend combina la ficha de Spotify con el
+ * rating/reviews propios de la BD.
+ */
+
+import { Review } from './review.model';
+
+export interface AlbumSearchResult {
+  spotifyAlbumId: string;
+  name: string;
+  artist: string;
+  coverUrl?: string;
+  /**
+   * ⚠️ El contrato lo documenta como number, pero el backend real de
+   * Alexis lo está devolviendo como string (ver payload de ejemplo:
+   * "releaseYear": "1982"). Se deja como string | number para no
+   * romper si lo corrigen más adelante.
+   */
+  releaseYear?: string | number;
+  platformRating?: number | null;
+  platformReviewsCount?: number | null;
+  /**
+   * Estos dos campos no están en la sección de "Response 200" de
+   * /api/spotify/search del contrato v1.0, pero el backend real ya los
+   * está mandando en cada resultado (ver payload de ejemplo compartido
+   * por Alexis). Se dejan opcionales por si algún día dejan de venir.
+   */
+  tracklist?: string[] | null;
+  myReview?: Review | null;
+}
+
+/**
+ * ⚠️ DESVIACIÓN DEL CONTRATO v1.0: el contrato documenta la respuesta de
+ * GET /api/spotify/search como { "results": [...] }, pero el backend
+ * real de Alexis devuelve un ResponseEntity<List<AlbumResponse>>, es
+ * decir un array plano. Por eso el service ya NO usa un wrapper tipo
+ * AlbumSearchResponse; search() retorna AlbumSearchResult[] directo.
+ * Si el backend llega a "corregirse" para envolver en results, hay que
+ * revertir este cambio en album.ts.
+ */
+
+export interface AlbumDetail {
+  spotifyAlbumId: string;
+  name: string;
+  artist: string;
+  coverUrl?: string;
+  releaseYear?: string | number;
+  tracklist?: string[] | null;
+  platformRating?: number | null;
+  platformReviewsCount?: number | null;
+  /**
+   * Reseña del usuario actual para este álbum, o null si no ha
+   * reseñado. El contrato dice "myReview trae la reseña del usuario
+   * actual si existe, o null" pero no muestra el shape exacto — se
+   * asume que es un Review normal (mismo formato que en el feed).
+   * Ojo: puede venir con menos campos poblados (p. ej. sin `user`,
+   * porque ya sabemos que es el usuario actual).
+   */
+  myReview?: Review | null;
+}
+</file>
+
+<file path="frontend/src/app/modules/listener/album-detail/album-detail.html">
+<!--
+  VISTA 5 del mockup (MU_1.html). Se monta dentro de MainLayout.
+-->
+<div class="topbar">
+  <div class="topbar-row">
+    <a class="back-link" routerLink="/listener/album-search">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M15 18l-6-6 6-6" />
+      </svg>
+      Buscar
+    </a>
+  </div>
+</div>
+
+<div class="album-detail-main">
+  <div class="detail-status" *ngIf="loadingAlbum()">Cargando álbum…</div>
+  <div class="detail-status error" *ngIf="!loadingAlbum() && albumError()">{{ albumError() }}</div>
+
+  <ng-container *ngIf="!loadingAlbum() && !albumError() && album() as a">
+    <div class="album-hero">
+      <img *ngIf="a.coverUrl" class="album-hero-art" [src]="a.coverUrl" [alt]="a.name" />
+      <div *ngIf="!a.coverUrl" class="album-hero-art-placeholder">
+        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="rgba(143,156,174,0.3)" stroke-width="1.2">
+          <circle cx="12" cy="12" r="10" />
+          <circle cx="12" cy="12" r="3" />
+        </svg>
+      </div>
+      <div class="album-meta">
+        <div class="eyebrow">ÁLBUM</div>
+        <h2>{{ a.name }}</h2>
+        <div class="artist">{{ a.artist }}</div>
+        <div class="year-genre">
+          <ng-container *ngIf="a.releaseYear">{{ a.releaseYear }}</ng-container>
+          <ng-container *ngIf="tracklist.length"> · {{ tracklist.length }} pistas</ng-container>
+        </div>
+
+        <div class="album-rating-row" *ngIf="a.platformRating != null">
+          <div class="big-rating">{{ formattedRating }}</div>
+          <div class="rating-detail">
+            <app-star-rating [rating]="a.platformRating ?? 0"></app-star-rating>
+            <div class="review-count">
+              {{ a.platformReviewsCount ?? totalReviews() }} reseñas en la plataforma
+            </div>
+          </div>
+        </div>
+        <div class="album-rating-row" *ngIf="a.platformRating == null">
+          <div class="review-count">Todavía no tiene reseñas en la plataforma. ¡Sé el primero!</div>
+        </div>
+
+        <div class="album-actions">
+          <a class="btn-primary" [routerLink]="['/listener/album', a.spotifyAlbumId, 'review']">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M12 2l3 6.5 7 .8-5.2 4.9 1.4 7-6.2-3.6-6.2 3.6 1.4-7L2 9.3l7-.8z" />
+            </svg>
+            {{ a.myReview ? 'Editar mi reseña' : 'Escribir reseña' }}
+          </a>
+          <button class="btn-ghost" disabled title="Próximamente">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
+            </svg>
+            Guardar en lista
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <ng-container *ngIf="tracklist.length">
+      <div class="section-divider"></div>
+      <div class="section-title">Tracklist</div>
+      <div class="tracklist">
+        <div class="track-row" *ngFor="let track of tracklist; let i = index">
+          <span class="track-num">{{ i + 1 }}</span>
+          <span class="track-title">{{ track }}</span>
+        </div>
+      </div>
+    </ng-container>
+
+    <div class="section-divider"></div>
+    <div class="reviews-section">
+      <div class="reviews-header">
+        <div class="section-title" style="margin:0;">Reseñas de la comunidad</div>
+        <span class="reviews-total" *ngIf="!loadingReviews()">{{ totalReviews() }} en total</span>
+      </div>
+
+      <div class="detail-status" *ngIf="loadingReviews()">Cargando reseñas…</div>
+      <div class="detail-status" *ngIf="!loadingReviews() && reviews().length === 0">
+        Aún no hay reseñas para este álbum. Sé el primero en reseñarlo.
+      </div>
+
+      <div class="reviews-list" *ngIf="!loadingReviews() && reviews().length > 0">
+        <app-review-card *ngFor="let review of reviews()" [review]="review"></app-review-card>
+      </div>
+    </div>
+  </ng-container>
+</div>
+</file>
+
 <file path="frontend/src/app/modules/listener/album-search/album-search.ts">
 import { Component, OnDestroy, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -6877,6 +7420,12 @@ export const routes: Routes = [
         //canActivate: [authGuard],
         loadComponent: () =>
           import('./modules/listener/album-detail/album-detail').then((m) => m.AlbumDetail),
+      },
+      {
+        path: 'listener/album/:id/review',
+        //canActivate: [authGuard],
+        loadComponent: () =>
+          import('./modules/listener/review-editor/review-editor').then((m) => m.ReviewEditor),
       },
 
       // alias usado en el sidebar (routerLink="/home") -> apunta al feed del listener

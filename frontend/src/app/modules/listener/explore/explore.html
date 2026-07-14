@@ -1,1 +1,64 @@
-<p>explore works!</p>
+<!--
+  VISTA 3 del mockup (MU_1.html) — CU-15. Se monta dentro de MainLayout.
+-->
+<div class="topbar">
+  <div class="topbar-row">
+    <h1>Explorar</h1>
+  </div>
+</div>
+
+<div class="explore-hero">
+  <h2>Descubre nuevos sonidos</h2>
+  <p>Navega por géneros y encuentra álbumes reseñados por la comunidad</p>
+</div>
+
+<div class="explore-content">
+  <div class="section-title">Géneros</div>
+  <div class="genres-grid">
+    <div
+      class="genre-card"
+      *ngFor="let genre of genres"
+      [class]="genre.cssClass"
+      [class.active]="selectedGenre()?.id === genre.id"
+      (click)="selectGenre(genre)"
+    >
+      <div class="genre-emoji">{{ genre.emoji }}</div>
+      <div class="genre-name">{{ genre.name }}</div>
+      <div class="genre-hint">{{ selectedGenre()?.id === genre.id ? 'Click para quitar filtro' : 'Ver álbumes' }}</div>
+    </div>
+  </div>
+
+  <ng-container *ngIf="selectedGenre() as g">
+    <div class="section-title">{{ g.name }}</div>
+
+    <div class="explore-status" *ngIf="loading()">Buscando álbumes de {{ g.name }}…</div>
+    <div class="explore-status error" *ngIf="!loading() && errorMessage()">{{ errorMessage() }}</div>
+    <div class="explore-status" *ngIf="!loading() && !errorMessage() && results().length === 0">
+      No encontramos álbumes de este género todavía.
+    </div>
+
+    <div class="trending-albums" *ngIf="!loading() && !errorMessage() && results().length > 0">
+      <div class="trending-album-card" *ngFor="let album of results()" (click)="goToAlbum(album)">
+        <img *ngIf="album.coverUrl" class="t-art" [src]="album.coverUrl" [alt]="album.name" />
+        <div *ngIf="!album.coverUrl" class="t-art-placeholder">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="rgba(143,156,174,0.3)" stroke-width="1.5">
+            <circle cx="12" cy="12" r="10" />
+            <circle cx="12" cy="12" r="3" />
+          </svg>
+        </div>
+        <div class="t-title">{{ album.name }}</div>
+        <div class="t-artist">{{ album.artist }}</div>
+        <div class="t-rating">{{ formatRating(album) }}</div>
+      </div>
+    </div>
+  </ng-container>
+
+  <ng-container *ngIf="!selectedGenre()">
+    <div class="section-title">Trending esta semana</div>
+    <div class="explore-status">
+      Todavía no hay un endpoint de "trending" en el contrato de la API (algo como
+      <code>GET /api/spotify/trending</code>). Cuando Alexis lo agregue, esta sección se conecta
+      igual que los géneros de arriba. Por ahora, elige un género para ver álbumes reales.
+    </div>
+  </ng-container>
+</div>

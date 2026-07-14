@@ -40,10 +40,22 @@ export const routes: Routes = [
           import('./modules/listener/my-profile/my-profile').then((m) => m.MyProfileComponent),
       },
       {
+        path: 'listener/collections',
+        //canActivate: [authGuard],
+        loadComponent: () =>
+          import('./modules/listener/collections/collections').then((m) => m.Collections),
+      },
+      {
         path: 'listener/album-search',
         //canActivate: [authGuard],
         loadComponent: () =>
           import('./modules/listener/album-search/album-search').then((m) => m.AlbumSearch),
+      },
+      {
+        path: 'listener/explore',
+        //canActivate: [authGuard],
+        loadComponent: () =>
+          import('./modules/listener/explore/explore').then((m) => m.Explore),
       },
       {
         path: 'listener/album/:id',
