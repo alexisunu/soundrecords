@@ -7,10 +7,9 @@ import java.util.UUID;
 
 @Data
 @Builder
-public class UserResponse {
+public class ReviewFeedUser {
 
     private UUID id;
     private String username;
-    private String bio;
     private String photoUrl;
 }

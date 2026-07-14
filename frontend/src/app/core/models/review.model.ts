@@ -47,8 +47,9 @@ export interface FeedResponse {
 
 export interface AlbumReviewsResponse {
   reviews: Review[];
-  averageRating: number;
+  averageRating: number | null;
   totalReviews: number;
+  myReview?: Review | null;
 }
 
 export interface LikeResponse {

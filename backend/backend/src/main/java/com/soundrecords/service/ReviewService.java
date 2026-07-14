@@ -2,6 +2,9 @@ package com.soundrecords.service;
 
 import com.soundrecords.dto.ReviewRequest;
 import com.soundrecords.dto.AlbumResponse;
+import com.soundrecords.dto.AlbumReviewsResponse;
+import com.soundrecords.dto.ReviewFeedItem;
+import com.soundrecords.dto.ReviewFeedUser;
 import com.soundrecords.model.Review;
 import com.soundrecords.model.User;
 import com.soundrecords.repository.ReviewRepository;
@@ -84,6 +87,69 @@ public class ReviewService {
         reviewRepository.findAverageRatingBySpotifyAlbumId(review.getSpotifyAlbumId());
 
         return saved;
+    }
+
+    public AlbumReviewsResponse getAlbumReviews(String spotifyAlbumId, User currentUser) {
+        if (spotifyAlbumId == null || spotifyAlbumId.isBlank()) {
+            throw new IllegalArgumentException("spotifyAlbumId es obligatorio");
+        }
+
+        String normalizedId = spotifyAlbumId.trim();
+        java.util.List<Review> reviews = reviewRepository.findBySpotifyAlbumIdOrderByCreatedAtDesc(normalizedId);
+        Double averageRating = reviewRepository.findAverageRatingBySpotifyAlbumId(normalizedId);
+        Integer totalReviews = reviewRepository.countBySpotifyAlbumId(normalizedId);
+
+        // myReview: si hay usuario autenticado, buscar su reseña
+        com.soundrecords.dto.ReviewResponse myReview = null;
+        if (currentUser != null) {
+            java.util.Optional<Review> maybe = reviewRepository.findByUserIdAndSpotifyAlbumId(currentUser.getId(), normalizedId);
+            if (maybe.isPresent()) {
+                Review r = maybe.get();
+                myReview = com.soundrecords.dto.ReviewResponse.builder()
+                        .id(r.getId())
+                        .userId(r.getUser().getId())
+                        .username(r.getUser().getDisplayUsername())
+                        .userPhotoUrl(r.getUser().getPhotoUrl())
+                        .spotifyAlbumId(r.getSpotifyAlbumId())
+                        .albumName(r.getAlbumName())
+                        .artistName(r.getArtistName())
+                        .coverUrl(r.getCoverUrl())
+                        .content(r.getContent())
+                        .rating(r.getRating())
+                        .likesCount(r.getLikesCount())
+                        .status(r.getStatus())
+                        .createdAt(r.getCreatedAt())
+                        .build();
+            }
+        }
+
+        return AlbumReviewsResponse.builder()
+                .reviews(reviews.stream()
+                        .map(review -> mapToFeedItem(review, currentUser))
+                        .toList())
+                .averageRating(averageRating) // nullable: null significa "sin reseñas"
+                .totalReviews(totalReviews == null ? 0 : totalReviews)
+                .myReview(myReview)
+                .build();
+    }
+
+    private ReviewFeedItem mapToFeedItem(Review review, User currentUser) {
+        return ReviewFeedItem.builder()
+                .id(review.getId())
+                .user(ReviewFeedUser.builder()
+                        .id(review.getUser().getId())
+                        .username(review.getUser().getDisplayUsername())
+                        .photoUrl(review.getUser().getPhotoUrl())
+                        .build())
+                .albumName(review.getAlbumName())
+                .artistName(review.getArtistName())
+                .coverUrl(review.getCoverUrl())
+                .rating(review.getRating())
+                .content(review.getContent())
+                .likesCount(review.getLikesCount())
+                .likedByMe(false)
+                .createdAt(review.getCreatedAt())
+                .build();
     }
 
     @Transactional

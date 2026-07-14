@@ -25,11 +25,11 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(buildError(400, "Bad Request", errors.get(0)));
     }
 
-    // Errores de negocio (email duplicado, etc.)
+    // Errores de negocio (email duplicado, datos inválidos, etc.)
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, Object>> handleIllegalArgument(
             IllegalArgumentException ex) {
-        return ResponseEntity.status(409).body(buildError(409, "Conflict", ex.getMessage()));
+        return ResponseEntity.badRequest().body(buildError(400, "Bad Request", ex.getMessage()));
     }
 
     // Errores de autenticación

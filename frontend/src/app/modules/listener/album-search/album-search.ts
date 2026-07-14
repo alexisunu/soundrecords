@@ -72,6 +72,7 @@ export class AlbumSearch implements OnInit, OnDestroy {
         }),
       )
       .subscribe((res) => {
+        console.log('Respuesta de búsqueda de álbumes:', res);
         if (!res) return; // caso q="" o error, ya manejados arriba
         this.searched.set(true);
         // El backend real devuelve un array plano (List<AlbumResponse>),
@@ -99,6 +100,7 @@ export class AlbumSearch implements OnInit, OnDestroy {
   }
 
   goToAlbum(album: AlbumSearchResult): void {
+    console.log('Album seleccionado para navegación:', album);
     this.router.navigate(['/listener/album', album.spotifyAlbumId]);
   }
 

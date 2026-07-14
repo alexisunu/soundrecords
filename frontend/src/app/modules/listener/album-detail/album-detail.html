@@ -34,16 +34,16 @@
           <ng-container *ngIf="tracklist.length"> · {{ tracklist.length }} pistas</ng-container>
         </div>
 
-        <div class="album-rating-row" *ngIf="a.platformRating != null">
+        <div class="album-rating-row" *ngIf="averageRating() != null">
           <div class="big-rating">{{ formattedRating }}</div>
           <div class="rating-detail">
-            <app-star-rating [rating]="a.platformRating ?? 0"></app-star-rating>
+            <app-star-rating [rating]="averageRating() ?? 0"></app-star-rating>
             <div class="review-count">
-              {{ a.platformReviewsCount ?? totalReviews() }} reseñas en la plataforma
+              {{ totalReviews() }} reseñas en la plataforma
             </div>
           </div>
         </div>
-        <div class="album-rating-row" *ngIf="a.platformRating == null">
+        <div class="album-rating-row" *ngIf="averageRating() == null">
           <div class="review-count">Todavía no tiene reseñas en la plataforma. ¡Sé el primero!</div>
         </div>
 
