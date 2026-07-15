@@ -1,6 +1,8 @@
+
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import {
   AlbumReviewsResponse,
   CreateReviewPayload,
@@ -40,8 +42,18 @@ export class ReviewService {
 
   // GET /api/reviews/user/{userId} - reseñas hechas por un usuario puntual
   // (usado en Mi Perfil / perfil público, pestaña "Reseñas").
+  // ⚠️ FIX: este endpoint ni siquiera está documentado en el API Contract
+  // v1.0 (no aparece en la lista de endpoints de ReviewController), así
+  // que se asumió por analogía con /feed que venía envuelto en
+  // { "reviews": [...] }. Mismo problema que ya vimos en
+  // ArtistService.discover(): si el backend responde con un array plano
+  // (List<ReviewResponse> directo), "res.reviews" queda undefined y la
+  // pestaña de Reseñas se queda vacía aunque el backend sí traiga datos.
+  // Se normaliza acá para que ambos formatos funcionen.
   getByUser(userId: string): Observable<UserReviewsResponse> {
-    return this.http.get<UserReviewsResponse>(`${this.baseUrl}/user/${userId}`);
+    return this.http.get<UserReviewsResponse | Review[]>(`${this.baseUrl}/user/${userId}`).pipe(
+      map((res) => (Array.isArray(res) ? { reviews: res } : res)),
+    );
   }
 
   // GET /api/reviews/{id}

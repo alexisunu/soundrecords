@@ -1,11 +1,10 @@
+
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { catchError, of } from 'rxjs';
 import { AlbumService } from '../../../core/services/album';
-import { ArtistService } from '../../../core/services/artist';
 import { AlbumSearchResult } from '../../../core/models/album.model';
-import { DiscoverArtist } from '../../../core/models/artist.model';
 
 interface Genre {
   id: string;
@@ -43,44 +42,41 @@ export class Explore implements OnInit {
   loading = signal(false);
   errorMessage = signal<string | null>(null);
 
-  // GET /api/artists/discover — "Descubre artistas emergentes". Antes
-  // esta sección de abajo era un placeholder de "Trending" sin backend
-  // real (no existe GET /api/spotify/trending en el contrato). La
-  // reemplazamos por el endpoint de discover, que sí está documentado
-  // en ArtistController y antes solo vivía como un ítem deshabilitado
-  // ("Próximamente") en el sidebar.
-  emergingArtists = signal<DiscoverArtist[]>([]);
-  loadingArtists = signal(true);
-  errorArtists = signal<string | null>(null);
+  // GET /api/spotify/trending — álbumes en tendencia. Se muestra cuando
+  // no hay ningún género seleccionado. "Descubre antes que todos"
+  // (artistas emergentes) ya tiene su propia vista dedicada en
+  // /listener/discover, así que no se repite acá.
+  trendingAlbums = signal<AlbumSearchResult[]>([]);
+  loadingTrending = signal(true);
+  errorTrending = signal<string | null>(null);
 
   constructor(
     private albumService: AlbumService,
-    private artistService: ArtistService,
     private router: Router,
   ) {}
 
   ngOnInit(): void {
-    this.loadEmergingArtists();
+    this.loadTrending();
   }
 
-  private loadEmergingArtists(): void {
-    this.loadingArtists.set(true);
-    this.errorArtists.set(null);
-    this.artistService
-      .discover()
+  private loadTrending(): void {
+    this.loadingTrending.set(true);
+    this.errorTrending.set(null);
+    this.albumService
+      .getTrending()
       .pipe(
         catchError((err) => {
-          this.errorArtists.set(
+          this.errorTrending.set(
             err?.name === 'TimeoutError'
               ? 'La carga está tardando demasiado. Intenta de nuevo.'
-              : 'No pudimos cargar artistas emergentes.',
+              : 'No pudimos cargar los álbumes en tendencia.',
           );
           return of(null);
         }),
       )
       .subscribe((res) => {
-        this.loadingArtists.set(false);
-        if (res) this.emergingArtists.set(res.artists);
+        this.loadingTrending.set(false);
+        if (res) this.trendingAlbums.set(res);
       });
   }
 
@@ -121,10 +117,6 @@ export class Explore implements OnInit {
 
   goToAlbum(album: AlbumSearchResult): void {
     this.router.navigate(['/listener/album', album.spotifyAlbumId]);
-  }
-
-  goToArtist(artist: DiscoverArtist): void {
-    this.router.navigate(['/artist', artist.id]);
   }
 
   formatRating(album: AlbumSearchResult): string {

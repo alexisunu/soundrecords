@@ -1,3 +1,4 @@
+
 import { Component, OnDestroy, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
@@ -33,7 +34,10 @@ export class Feed implements OnInit, OnDestroy {
   // data URI para no depender de subir un archivo a /public. Si más
   // adelante hay un asset real, basta con reemplazar promoImageSrc por
   // la ruta ('/promo-event.jpg') sin tocar el template.
-  readonly promoLink = '/plans';
+  // Anuncio externo -> página oficial de Rock al Parque (no es una ruta
+  // interna, por eso en el template usa [href] + target="_blank" y no
+  // [routerLink]).
+  readonly promoLink = 'https://rockalparque.gov.co/';
 
   private readonly promoBannerSvg = `
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 360">
@@ -76,8 +80,9 @@ export class Feed implements OnInit, OnDestroy {
 
   readonly promoImageSrc = 'data:image/svg+xml;utf8,' + encodeURIComponent(this.promoBannerSvg);
 
-  // Segundo anuncio del rail, mismo mecanismo (data URI) que el de arriba.
-  readonly promoLink2 = '/plans';
+  // Segundo anuncio del rail, mismo mecanismo (data URI) que el de
+  // arriba. Página oficial del Festival Estéreo Picnic.
+  readonly promoLink2 = 'https://www.festivalestereopicnic.com/';
 
   private readonly promoBannerSvg2 = `
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 360">

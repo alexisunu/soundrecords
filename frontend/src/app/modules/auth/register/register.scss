@@ -1,3 +1,4 @@
+
 :host {
   --bg: #0a1128;
   --accent: #17d1e8;
@@ -157,49 +158,6 @@
 
 .btn-block {
   width: 100%;
-}
-
-.auth-divider {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin: 18px 0;
-
-  span {
-    font-size: 12px;
-    color: var(--text-secondary);
-  }
-
-  &::before,
-  &::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: var(--card-border);
-  }
-}
-
-.spotify-btn {
-  width: 100%;
-  padding: 11px;
-  border-radius: 10px;
-  background: rgba(30, 215, 96, 0.12);
-  border: 1px solid rgba(30, 215, 96, 0.3);
-  color: #1ed760;
-  font-weight: 700;
-  font-size: 13.5px;
-  font-family: inherit;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  margin-bottom: 4px;
-  transition: background 0.15s;
-
-  &:hover {
-    background: rgba(30, 215, 96, 0.18);
-  }
 }
 
 .auth-footer {

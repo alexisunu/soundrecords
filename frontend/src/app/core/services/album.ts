@@ -1,3 +1,4 @@
+
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -39,6 +40,18 @@ export class AlbumService {
   getById(spotifyAlbumId: string): Observable<AlbumDetail> {
     return this.http
       .get<AlbumDetail>(`${this.baseUrl}/albums/${spotifyAlbumId}`)
+      .pipe(timeout(this.REQUEST_TIMEOUT_MS));
+  }
+
+  // GET /api/spotify/trending — álbumes en tendencia. Usado por la
+  // sección "Descubre nuevos sonidos" de Explorar cuando no hay ningún
+  // género seleccionado. Igual que en search(), asumimos array plano
+  // (List<AlbumResponse>) por consistencia con el resto del
+  // SpotifyController real, no el wrapper { results: [...] } del
+  // contrato v1.0.
+  getTrending(): Observable<AlbumSearchResult[]> {
+    return this.http
+      .get<AlbumSearchResult[]>(`${this.baseUrl}/trending`)
       .pipe(timeout(this.REQUEST_TIMEOUT_MS));
   }
 }

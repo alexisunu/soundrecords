@@ -1,3 +1,4 @@
+
 <!--
   Esta plantilla es SOLO el contenido "main" de la vista Configuración
   (tal como en el mockup v9). La sidebar es un componente aparte que
@@ -21,14 +22,6 @@
       <div class="stab" [class.active]="activeTab === 'cuenta'" (click)="switchTab('cuenta')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 3"/></svg>
         Cuenta
-      </div>
-      <div class="stab" [class.active]="activeTab === 'spotify'" (click)="switchTab('spotify')">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.373 0 12s5.37 12 12 12 12-5.373 12-12S18.63 0 12 0z"/></svg>
-        Spotify
-      </div>
-      <div class="stab" [class.active]="activeTab === 'privacidad'" (click)="switchTab('privacidad')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l8 4v6c0 5-8 10-8 10S4 17 4 12V6z"/></svg>
-        Privacidad
       </div>
       <div class="stab" [class.active]="activeTab === 'planes'" (click)="switchTab('planes')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2.7 6.6L22 9l-5 4.6L18.5 22 12 17.8 5.5 22 7 13.6 2 9l7.3-.4z"/></svg>
@@ -126,90 +119,6 @@
       </div>
     </div>
 
-    <!-- TAB SPOTIFY -->
-    <div class="settings-tab-content" [style.display]="activeTab === 'spotify' ? 'block' : 'none'">
-      <div class="section">
-        <div class="section-head">
-          <div>
-            <h2>Vinculación con Spotify</h2>
-            <p>Conecta tu cuenta para importar tu historial de álbumes escuchados</p>
-          </div>
-        </div>
-
-        <div class="spotify-connected" *ngIf="user?.spotifyLinked; else notLinked">
-          <div class="sp-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M12 0C5.37 0 0 5.373 0 12s5.37 12 12 12 12-5.373 12-12S18.63 0 12 0zm5.44 17.32c-.213.34-.665.45-1.005.237-2.75-1.682-6.213-2.06-10.29-1.128-.39.09-.78-.15-.87-.54-.09-.39.15-.78.54-.87 4.46-1.02 8.29-.583 11.38 1.3.34.213.45.665.247 1.001z"/></svg>
-          </div>
-          <div class="sp-info">
-            <div class="sp-name">{{ user?.username }} Spotify</div>
-            <div class="sp-status">✓ Conectado</div>
-          </div>
-          <button type="button" class="btn-danger" style="padding:7px 14px;font-size:12px;" (click)="disconnectSpotify()">Desvincular</button>
-        </div>
-
-        <ng-template #notLinked>
-          <button type="button" class="spotify-btn" (click)="disconnectSpotify()">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.373 0 12s5.37 12 12 12 12-5.373 12-12S18.63 0 12 0zm5.44 17.32c-.213.34-.665.45-1.005.237-2.75-1.682-6.213-2.06-10.29-1.128-.39.09-.78-.15-.87-.54-.09-.39.15-.78.54-.87 4.46-1.02 8.29-.583 11.38 1.3.34.213.45.665.247 1.001z"/></svg>
-            Conectar con Spotify
-          </button>
-        </ng-template>
-      </div>
-    </div>
-
-    <!-- TAB PRIVACIDAD -->
-    <div class="settings-tab-content" [style.display]="activeTab === 'privacidad' ? 'block' : 'none'">
-      <div class="section">
-        <div class="section-head">
-          <div>
-            <h2>Privacidad del perfil</h2>
-            <p>Controla quién puede ver tu actividad</p>
-          </div>
-        </div>
-
-        <form [formGroup]="privacyForm" (ngSubmit)="savePrivacy()">
-          <div class="toggle-row">
-            <div>
-              <div class="toggle-label">Perfil público</div>
-              <div class="toggle-sub">Cualquiera puede ver tu perfil y reseñas</div>
-            </div>
-            <label class="toggle" [class.on]="privacyForm.get('publicProfile')?.value">
-              <input type="checkbox" formControlName="publicProfile" style="display:none;" />
-            </label>
-          </div>
-          <div class="toggle-row">
-            <div>
-              <div class="toggle-label">Mostrar mis listas</div>
-              <div class="toggle-sub">Tus colecciones serán visibles para todos</div>
-            </div>
-            <label class="toggle" [class.on]="privacyForm.get('showLists')?.value">
-              <input type="checkbox" formControlName="showLists" style="display:none;" />
-            </label>
-          </div>
-          <div class="toggle-row">
-            <div>
-              <div class="toggle-label">Mostrar mis likes</div>
-              <div class="toggle-sub">Oculta las reseñas a las que has dado like</div>
-            </div>
-            <label class="toggle" [class.on]="privacyForm.get('showLikes')?.value">
-              <input type="checkbox" formControlName="showLikes" style="display:none;" />
-            </label>
-          </div>
-          <div class="toggle-row">
-            <div>
-              <div class="toggle-label">Notificaciones por email</div>
-              <div class="toggle-sub">Recibe avisos de likes, seguidores y misiones</div>
-            </div>
-            <label class="toggle" [class.on]="privacyForm.get('emailNotifications')?.value">
-              <input type="checkbox" formControlName="emailNotifications" style="display:none;" />
-            </label>
-          </div>
-          <div class="row-actions">
-            <button type="submit" class="btn-primary">Guardar preferencias</button>
-          </div>
-        </form>
-      </div>
-    </div>
-
     <!-- TAB PLANES -->
     <div class="settings-tab-content" [style.display]="activeTab === 'planes' ? 'block' : 'none'">
       <div style="margin-bottom:16px;">
@@ -234,7 +143,7 @@
         <div class="plan-card popular">
           <div class="plan-popular-badge">⭐ Más popular</div>
           <div class="plan-name">Oyente Premium</div>
-          <div class="plan-price">$4.99 <span>/ mes</span></div>
+          <div class="plan-price">$3.99 <span>/ mes</span></div>
           <ul class="plan-features">
             <li>Todo lo del plan Gratis</li>
             <li>Sin anuncios</li>
@@ -246,7 +155,7 @@
 
         <div class="plan-card">
           <div class="plan-name">Artista Premium</div>
-          <div class="plan-price">$9.99 <span>/ mes</span></div>
+          <div class="plan-price">$12 <span>/ mes</span></div>
           <ul class="plan-features">
             <li>Todo lo de Oyente Premium</li>
             <li>Dashboard de artista</li>

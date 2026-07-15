@@ -1,3 +1,4 @@
+
 <!--
   Esta plantilla es SOLO el contenido "main" + rail de la vista Feed/Inicio
   (VISTA 2 del mockup). La sidebar es un componente aparte que envolverá
@@ -73,11 +74,11 @@
 
   <!-- Rail: contenido de referencia visual del mockup. -->
   <aside class="rail">
-    <a class="promo-banner" [routerLink]="promoLink">
+    <a class="promo-banner" [href]="promoLink" target="_blank" rel="noopener noreferrer">
       <img [src]="promoImageSrc" alt="Rock al Parque Virtual - SoundRecords" />
     </a>
 
-    <a class="promo-banner" [routerLink]="promoLink2">
+    <a class="promo-banner" [href]="promoLink2" target="_blank" rel="noopener noreferrer">
       <img [src]="promoImageSrc2" alt="Festival Estéreo Picnic - SoundRecords" />
     </a>
   </aside>

@@ -1,3 +1,4 @@
+
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
@@ -13,11 +14,10 @@ import { Router } from '@angular/router';
   styleUrls: ['./settings.scss'],
 })
 export class SettingsComponent implements OnInit {
-  activeTab: 'perfil' | 'cuenta' | 'spotify' | 'privacidad' | 'planes' = 'perfil';
+  activeTab: 'perfil' | 'cuenta' | 'planes' = 'perfil';
 
   profileForm!: FormGroup;
   credentialsForm!: FormGroup;
-  privacyForm!: FormGroup;
 
   user: any = null;
   credentialsError: string = '';
@@ -48,7 +48,7 @@ export class SettingsComponent implements OnInit {
     });
   }
 
-  switchTab(tab: 'perfil' | 'cuenta' | 'spotify' | 'privacidad' | 'planes'): void {
+  switchTab(tab: 'perfil' | 'cuenta' | 'planes'): void {
     this.activeTab = tab;
   }
 
@@ -64,13 +64,6 @@ export class SettingsComponent implements OnInit {
       email: ['', [Validators.required, Validators.email]],
       newPassword: ['', [Validators.minLength(8)]],
       confirmPassword: ['']
-    });
-
-    this.privacyForm = this.fb.group({
-      publicProfile: [true],
-      showLists: [true],
-      showLikes: [false],
-      emailNotifications: [true]
     });
   }
 
@@ -117,18 +110,6 @@ export class SettingsComponent implements OnInit {
       next: () => alert('Credenciales actualizadas de forma segura'),
       error: (err) => alert(err.error?.message || 'Error al cambiar credenciales')
     });
-  }
-
-  savePrivacy(): void {
-    this.userService.updatePrivacy(this.privacyForm.value).subscribe({
-      next: () => alert('Preferencias de privacidad guardadas'),
-      error: (err) => alert(err.error?.message || 'Error al actualizar privacidad')
-    });
-  }
-
-  disconnectSpotify(): void {
-    // TODO: conectar con DELETE /api/spotify/disconnect cuando esté disponible en el backend
-    alert('Función de desvinculación de Spotify próximamente disponible');
   }
 
   selectPlan(plan: string): void {

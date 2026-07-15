@@ -1,3 +1,4 @@
+
 <!--
   VISTA 3 del mockup (MU_1.html) — CU-15. Se monta dentro de MainLayout.
 -->
@@ -54,28 +55,26 @@
   </ng-container>
 
   <ng-container *ngIf="!selectedGenre()">
-    <div class="section-title">Descubre antes que todos</div>
+    <div class="section-title">Trending</div>
 
-    <div class="explore-status" *ngIf="loadingArtists()">Cargando artistas emergentes…</div>
-    <div class="explore-status error" *ngIf="!loadingArtists() && errorArtists()">{{ errorArtists() }}</div>
-    <div class="explore-status" *ngIf="!loadingArtists() && !errorArtists() && emergingArtists().length === 0">
-      Todavía no hay artistas para descubrir.
+    <div class="explore-status" *ngIf="loadingTrending()">Cargando álbumes en tendencia…</div>
+    <div class="explore-status error" *ngIf="!loadingTrending() && errorTrending()">{{ errorTrending() }}</div>
+    <div class="explore-status" *ngIf="!loadingTrending() && !errorTrending() && trendingAlbums().length === 0">
+      Todavía no hay álbumes en tendencia.
     </div>
 
-    <div class="trending-albums" *ngIf="!loadingArtists() && !errorArtists() && emergingArtists().length > 0">
-      <div class="trending-album-card" *ngFor="let artist of emergingArtists()" (click)="goToArtist(artist)">
-        <img *ngIf="artist.photoUrl" class="t-art artist-photo" [src]="artist.photoUrl" [alt]="artist.artistName" />
-        <div *ngIf="!artist.photoUrl" class="t-art-placeholder artist-photo">
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="rgba(143,156,174,0.3)" stroke-width="1.5">
-            <circle cx="12" cy="8" r="4" />
-            <path d="M4 21c0-4 3.5-7 8-7s8 3 8 7" />
+    <div class="trending-albums" *ngIf="!loadingTrending() && !errorTrending() && trendingAlbums().length > 0">
+      <div class="trending-album-card" *ngFor="let album of trendingAlbums()" (click)="goToAlbum(album)">
+        <img *ngIf="album.coverUrl" class="t-art" [src]="album.coverUrl" [alt]="album.name" />
+        <div *ngIf="!album.coverUrl" class="t-art-placeholder">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="rgba(143,156,174,0.3)" stroke-width="1.5">
+            <circle cx="12" cy="12" r="10" />
+            <circle cx="12" cy="12" r="3" />
           </svg>
         </div>
-        <div class="t-title">
-          {{ artist.artistName }}
-          <span class="premium-badge" *ngIf="artist.isPremium">★ Premium</span>
-        </div>
-        <div class="t-artist">{{ artist.genres }}</div>
+        <div class="t-title">{{ album.name }}</div>
+        <div class="t-artist">{{ album.artist }}</div>
+        <div class="t-rating">{{ formatRating(album) }}</div>
       </div>
     </div>
   </ng-container>

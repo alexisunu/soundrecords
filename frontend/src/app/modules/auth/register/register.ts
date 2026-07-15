@@ -1,3 +1,4 @@
+
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -64,9 +65,5 @@ export class RegisterComponent implements OnInit {
         this.errorMessage = err.error?.message || 'Error en el registro. Nombre de usuario o email duplicados.';
       },
     });
-  }
-
-  registerWithSpotify(): void {
-    // TODO: conectar con POST /api/spotify/connect cuando esté disponible
   }
 }
