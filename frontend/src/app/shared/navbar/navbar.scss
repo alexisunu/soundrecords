@@ -111,6 +111,17 @@ a {
   color: var(--accent);
 }
 
+/* Badge de no leídas del link "Notificaciones" (VISTA 17) */
+.nav-badge {
+  margin-left: auto;
+  background: var(--accent);
+  color: var(--bg);
+  font-size: 10.5px;
+  font-weight: 700;
+  border-radius: 20px;
+  padding: 1px 7px;
+}
+
 /* Ítems de módulos aún no implementados: visibles pero no navegables */
 .nav-item.is-disabled {
   cursor: default;

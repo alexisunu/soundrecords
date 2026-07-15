@@ -1,1 +1,234 @@
-<p>plans works!</p>
+<!--
+  VISTA 11 del mockup (MU_2.html) — Pasarela de pago / planes (CU-07).
+  A diferencia de las demás vistas, esta NO va dentro de MainLayout: en
+  el mockup no tiene sidebar, es una página completa como login/register.
+-->
+<div class="payment-page">
+  <div class="payment-layout" *ngIf="step() === 'form'">
+    <!-- IZQUIERDA -->
+    <div class="payment-left">
+      <div class="payment-step">
+        <span class="done">✓</span>
+        <span style="color: var(--text-secondary)">Elige tu plan</span>
+        <div class="sep"></div>
+        <span class="cur">2</span>
+        <span style="color: var(--text)">Pago</span>
+        <div class="sep"></div>
+        <span>3</span>
+        <span>Confirmación</span>
+      </div>
+
+      <div class="page-status" *ngIf="loadingPlans()">Cargando planes…</div>
+      <div class="page-status error" *ngIf="!loadingPlans() && errorPlans()">{{ errorPlans() }}</div>
+
+      <ng-container *ngIf="!loadingPlans() && !errorPlans()">
+        <div class="payment-section-title">Elige tu plan</div>
+        <div class="payment-section-sub">Cancela cuando quieras. Sin permanencia.</div>
+
+        <div
+          class="plan-select-row"
+          *ngFor="let plan of selectablePlans()"
+          [class.selected]="selectedPlanCode() === plan.code"
+          (click)="selectPlan(plan.code)"
+        >
+          <div class="radio"></div>
+          <div class="plan-info">
+            <div class="plan-name-s" [style.color]="selectedPlanCode() === plan.code ? 'var(--accent)' : null">
+              {{ plan.name }}
+            </div>
+            <div class="plan-desc-s">
+              {{
+                plan.code === 'ARTIST_PREMIUM'
+                  ? 'Dashboard privado · Analíticas · Boost de visibilidad · Perfil verificado'
+                  : 'Sin anuncios · Estadísticas avanzadas · Vinculación Spotify'
+              }}
+            </div>
+          </div>
+          <div class="plan-price-s">
+            ${{ plan.price }}<span style="font-size: 12px; color: var(--text-secondary); font-family: 'Inter', sans-serif">/mes</span>
+          </div>
+        </div>
+
+        <div class="artist-note" *ngIf="isArtistPlan() && alreadyArtist()">
+          Ya tienes perfil de artista. Puedes suscribirte igual para obtener los beneficios Premium.
+        </div>
+
+        <!-- Billing toggle -->
+        <div class="billing-toggle-row">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+          <span
+            >Elige <strong style="color: var(--text)">facturación anual</strong> y ahorra 2 meses —
+            <strong style="color: var(--success)">${{ (selectedPlan()?.price ?? 0) * 10 }}/año</strong></span
+          >
+          <div class="toggle" [class.on]="billingAnnual()" (click)="toggleBilling()"></div>
+        </div>
+
+        <!-- Método de pago -->
+        <div class="payment-section-title" style="font-size: 18px; margin-bottom: 4px">Método de pago</div>
+        <div class="payment-section-sub">Todos los datos se transmiten de forma cifrada (simulado)</div>
+
+        <div class="pay-method-grid">
+          <div class="pay-method" [class.selected]="paymentMethod() === 'CARD'" (click)="selectMethod('CARD')">
+            <div class="pm-icon">
+              <svg width="22" height="16" viewBox="0 0 32 20" fill="none">
+                <rect width="32" height="20" rx="3" fill="#1A1F71" /><rect y="5" width="32" height="5" fill="#F7B600" />
+              </svg>
+            </div>
+            <div class="pm-label">Tarjeta</div>
+          </div>
+          <div class="pay-method" [class.selected]="paymentMethod() === 'PAYPAL'" (click)="selectMethod('PAYPAL')">
+            <div class="pm-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M12 0C5.37 0 0 5.373 0 12s5.37 12 12 12 12-5.373 12-12S18.63 0 12 0zm5.44 17.32c-.213.34-.665.45-1.005.237-2.75-1.682-6.213-2.06-10.29-1.128-.39.09-.78-.15-.87-.54-.09-.39.15-.78.54-.87 4.46-1.02 8.29-.583 11.38 1.3.34.213.45.665.247 1.001z"
+                  fill="#1ed760"
+                />
+              </svg>
+            </div>
+            <div class="pm-label">PayPal</div>
+          </div>
+        </div>
+
+        <!-- Card fields: solo de vista, prellenados. El backend no valida tarjetas reales. -->
+        <div class="card-fields" *ngIf="paymentMethod() === 'CARD'">
+          <div>
+            <div class="card-input-wrap">
+              <div class="ci-label">Número de tarjeta</div>
+              <input type="text" [value]="cardNumber()" (input)="cardNumber.set($any($event.target).value)" />
+              <svg class="ci-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="1" y="4" width="22" height="16" rx="2" /><path d="M1 10h22" />
+              </svg>
+            </div>
+          </div>
+          <div class="card-row">
+            <div>
+              <div class="card-input-wrap">
+                <div class="ci-label">Vencimiento</div>
+                <input type="text" [value]="cardExpiry()" (input)="cardExpiry.set($any($event.target).value)" />
+                <svg class="ci-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" />
+                </svg>
+              </div>
+            </div>
+            <div>
+              <div class="card-input-wrap">
+                <div class="ci-label">CVV</div>
+                <input type="text" [value]="cardCvv()" (input)="cardCvv.set($any($event.target).value)" />
+                <svg class="ci-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0110 0v4" />
+                </svg>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="card-input-wrap">
+              <div class="ci-label">Nombre en la tarjeta</div>
+              <input
+                type="text"
+                [value]="cardName()"
+                (input)="cardName.set($any($event.target).value)"
+                style="font-family: 'Inter', sans-serif; padding-left: 14px"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div class="page-status error" *ngIf="submitError()">{{ submitError() }}</div>
+
+        <button class="btn-primary" [disabled]="submitting()" (click)="pay()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0110 0v4" />
+          </svg>
+          {{ submitting() ? 'Procesando…' : 'Suscribirse — $' + totalToday() + (billingAnnual() ? '/año' : '/mes') }}
+        </button>
+        <div class="secure-badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          </svg>
+          Pago simulado · Cancela en cualquier momento · Sin cargos ocultos
+        </div>
+      </ng-container>
+    </div>
+
+    <!-- DERECHA — Resumen de orden -->
+    <div class="payment-right" *ngIf="!loadingPlans() && !errorPlans() && selectedPlan() as plan">
+      <div class="order-summary-title">Resumen de tu plan</div>
+
+      <div class="order-plan-badge">
+        <div class="opb-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2l3 6.5 7 .8-5.2 4.9 1.4 7-6.2-3.6-6.2 3.6 1.4-7L2 9.3l7-.8z" />
+          </svg>
+        </div>
+        <div>
+          <div class="opb-name">{{ plan.name }}</div>
+          <div class="opb-sub">{{ billingAnnual() ? 'Facturado anualmente' : 'Facturado mensualmente' }}</div>
+        </div>
+        <div class="opb-price">${{ totalToday() }}</div>
+      </div>
+
+      <div class="order-features">
+        <div class="order-feat" *ngIf="plan.code === 'ARTIST_PREMIUM'">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12" /></svg
+          >Dashboard privado con analíticas
+        </div>
+        <div class="order-feat" *ngIf="plan.code === 'ARTIST_PREMIUM'">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12" /></svg
+          >Perfil verificado y boost de visibilidad
+        </div>
+        <div class="order-feat">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12" /></svg
+          >Sin anuncios
+        </div>
+        <div class="order-feat">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12" /></svg
+          >Estadísticas avanzadas
+        </div>
+        <div class="order-feat">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12" /></svg
+          >Vinculación con Spotify
+        </div>
+      </div>
+
+      <div class="order-divider"></div>
+
+      <ng-container *ngIf="billingAnnual()">
+        <div class="order-total-row" style="margin-bottom: 8px">
+          <span style="color: var(--text-secondary)">Precio mensual equiv.</span>
+          <span class="val">${{ monthlyEquivalent() }}/mes</span>
+        </div>
+        <div class="order-total-row" style="margin-bottom: 8px">
+          <span style="color: var(--text-secondary)">Descuento anual</span>
+          <span style="color: var(--success); font-weight: 700">-${{ annualSavings() }}</span>
+        </div>
+        <div class="order-divider"></div>
+      </ng-container>
+
+      <div class="order-total-row big">
+        <span>Total hoy</span>
+        <span class="val">${{ totalToday() }}</span>
+      </div>
+
+      <div class="order-fine-print">
+        Puedes cancelar en cualquier momento desde Configuración sin costo adicional.
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirmación -->
+  <div class="payment-confirm" *ngIf="step() === 'success'">
+    <div class="confirm-icon">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="20 6 9 17 4 12" />
+      </svg>
+    </div>
+    <h2>¡Listo, pago confirmado!</h2>
+    <p *ngIf="isArtistPlan()">
+      Tu suscripción a <strong>Artista Premium</strong> está activa y tu cuenta ya tiene perfil de artista.
+    </p>
+    <p *ngIf="!isArtistPlan()">Tu suscripción a <strong>{{ selectedPlan()?.name }}</strong> está activa.</p>
+    <button class="btn-primary" (click)="goToProfile()">Ir a mi perfil</button>
+  </div>
+</div>

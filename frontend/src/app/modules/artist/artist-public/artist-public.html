@@ -1,1 +1,164 @@
-<p>artist-public works!</p>
+<!--
+  VISTA 15 del mockup (MU_2.html). Se monta dentro de MainLayout, así
+  que el sidebar de la app ya viene dado; este componente sólo arma el
+  contenido: 1fr (main) + 300px (rail), igual que .artist-public-layout
+  en el mockup.
+-->
+<div class="detail-status" *ngIf="loadingArtist()">Cargando artista…</div>
+<div class="detail-status error" *ngIf="!loadingArtist() && artistError()">{{ artistError() }}</div>
+
+<ng-container *ngIf="!loadingArtist() && !artistError() && artist() as a">
+  <!-- Hero -->
+  <div class="artist-hero">
+    <div class="artist-hero-bg"></div>
+    <div class="artist-hero-pattern"></div>
+    <div class="artist-hero-content">
+      <div class="artist-hero-row">
+        <img *ngIf="a.photoUrl" class="artist-avatar-xl" [src]="a.photoUrl" [alt]="a.artistName" />
+        <div *ngIf="!a.photoUrl" class="artist-avatar-xl"></div>
+
+        <div class="artist-hero-info">
+          <div class="artist-name-big">{{ a.artistName }}</div>
+          <div class="artist-tags" *ngIf="genreTags.length">
+            <div class="artist-tag" *ngFor="let genre of genreTags">{{ genre }}</div>
+          </div>
+        </div>
+
+        <div class="artist-hero-actions">
+          <button
+            class="btn-primary"
+            [class.following]="isFollowing()"
+            [disabled]="followInFlight()"
+            (click)="toggleFollow()"
+          >
+            {{ isFollowing() ? 'Siguiendo' : '+ Seguir' }}
+          </button>
+          <button class="btn-ghost icon-only" (click)="copyProfileLink()" title="Copiar enlace del perfil">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
+              <path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98" />
+            </svg>
+          </button>
+          <span class="copied-tag" *ngIf="copied()">Enlace copiado ✓</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="artist-tabs">
+    <div class="artist-tab" [class.active]="activeTab() === 'discog'" (click)="switchTab('discog')">
+      Discografía
+    </div>
+    <div class="artist-tab" [class.active]="activeTab() === 'reviews'" (click)="switchTab('reviews')">
+      Reseñas
+    </div>
+    <div class="artist-tab" [class.active]="activeTab() === 'about'" (click)="switchTab('about')">
+      Sobre el artista
+    </div>
+  </div>
+
+  <!-- Layout -->
+  <div class="artist-public-layout">
+    <div class="artist-main-content">
+      <!-- Stats: sólo lo que el contrato realmente respalda.
+           No hay followersCount en GET /api/artists/{id}, así que no
+           se muestra tarjeta de seguidores (ver nota en artist.model.ts). -->
+      <div class="artist-stats-row">
+        <div class="artist-stat-card">
+          <div class="asc-val">{{ hasAnyRating() ? formattedRating(averageRating()) : '—' }}</div>
+          <div class="asc-key">Calificación promedio</div>
+        </div>
+        <div class="artist-stat-card">
+          <div class="asc-val">{{ a.discography.length }}</div>
+          <div class="asc-key">Álbumes en la plataforma</div>
+        </div>
+      </div>
+
+      <!-- Tab: Discografía -->
+      <div *ngIf="activeTab() === 'discog'">
+        <div class="section-title">Discografía</div>
+
+        <div class="detail-status" *ngIf="loadingDiscography()">Cargando discografía…</div>
+        <div class="detail-status" *ngIf="!loadingDiscography() && a.discography.length === 0">
+          Este artista todavía no tiene álbumes cargados en SoundRecords.
+        </div>
+
+        <div class="discog-grid" *ngIf="!loadingDiscography() && discography().length > 0">
+          <a
+            class="discog-card"
+            *ngFor="let album of discography()"
+            [routerLink]="['/listener/album', album.spotifyAlbumId]"
+          >
+            <div class="discog-cover">
+              <img *ngIf="album.coverUrl" [src]="album.coverUrl" [alt]="album.name" />
+              <svg
+                *ngIf="!album.coverUrl"
+                width="36"
+                height="36"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="rgba(143,156,174,0.2)"
+                stroke-width="1.5"
+              >
+                <circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="3" />
+              </svg>
+            </div>
+            <div class="discog-title">{{ album.name }}</div>
+            <div class="discog-meta">
+              <ng-container *ngIf="album.releaseYear">{{ album.releaseYear }}</ng-container>
+              <ng-container *ngIf="album.platformRating != null">
+                · ⭐ {{ formattedRating(album.platformRating) }}
+              </ng-container>
+            </div>
+          </a>
+        </div>
+      </div>
+
+      <!-- Tab: Reseñas -->
+      <div *ngIf="activeTab() === 'reviews'">
+        <div class="section-title">Últimas reseñas de la comunidad</div>
+
+        <div class="detail-status" *ngIf="loadingReviews()">Cargando reseñas…</div>
+        <div class="detail-status" *ngIf="!loadingReviews() && recentReviews().length === 0">
+          Todavía no hay reseñas para los álbumes de este artista.
+        </div>
+
+        <div class="reviews-list" *ngIf="!loadingReviews() && recentReviews().length > 0">
+          <app-review-card *ngFor="let review of recentReviews()" [review]="review"></app-review-card>
+        </div>
+      </div>
+
+      <!-- Tab: About -->
+      <div *ngIf="activeTab() === 'about'">
+        <div class="section-title">Sobre {{ a.artistName }}</div>
+        <div class="artist-about-text" *ngIf="a.biography">{{ a.biography }}</div>
+        <div class="artist-about-text" *ngIf="!a.biography">
+          Este artista todavía no agregó una biografía.
+        </div>
+
+        <div class="artist-links" *ngIf="a.spotifyUrl">
+          <a class="artist-link" [href]="a.spotifyUrl" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 0C5.37 0 0 5.373 0 12s5.37 12 12 12 12-5.373 12-12S18.63 0 12 0z" />
+            </svg>
+            Spotify
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rail -->
+    <div class="artist-rail">
+      <div class="rail-card">
+        <h3>Comparte este perfil</h3>
+        <p class="rail-hint">
+          Envíale este enlace a alguien que debería descubrir a {{ a.artistName }}.
+        </p>
+        <button class="btn-ghost" style="width:100%;justify-content:center;" (click)="copyProfileLink()">
+          {{ copied() ? 'Enlace copiado ✓' : 'Copiar enlace' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</ng-container>

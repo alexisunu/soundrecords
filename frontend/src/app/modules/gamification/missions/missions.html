@@ -1,1 +1,177 @@
-<p>missions works!</p>
+<!--
+  VISTA 12 del mockup (MU_2.html). Se monta dentro de MainLayout.
+-->
+<div class="topbar">
+  <div class="topbar-row">
+    <h1>Misiones y progreso</h1>
+  </div>
+</div>
+
+<div class="missions-content">
+  <div class="page-status" *ngIf="loadingMe()">Cargando tu progreso…</div>
+  <div class="page-status error" *ngIf="!loadingMe() && errorMe()">{{ errorMe() }}</div>
+
+  <ng-container *ngIf="!loadingMe() && !errorMe() && me() as m">
+    <!-- XP Hero -->
+    <div class="xp-hero">
+      <div class="xp-ring">
+        <svg viewBox="0 0 80 80">
+          <circle cx="40" cy="40" r="34" fill="none" stroke="rgba(143,156,174,0.12)" stroke-width="8" />
+          <circle
+            cx="40"
+            cy="40"
+            r="34"
+            fill="none"
+            stroke="url(#xpGrad)"
+            stroke-width="8"
+            [attr.stroke-dasharray]="ringCircumference"
+            [attr.stroke-dashoffset]="ringDashoffset()"
+            stroke-linecap="round"
+          />
+          <defs>
+            <linearGradient id="xpGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#17D1E8" />
+              <stop offset="100%" stop-color="#9B5DE5" />
+            </linearGradient>
+          </defs>
+        </svg>
+        <div class="xp-ring-num">
+          <div class="lvl">{{ levelProgressPct() }}%</div>
+          <div class="lbl">NIV</div>
+        </div>
+      </div>
+      <div class="xp-info">
+        <div class="xp-title">{{ m.level }}</div>
+        <div class="xp-sub">Estás a <strong>{{ m.pointsToNextLevel }} pts</strong> del siguiente nivel</div>
+        <div class="xp-bar-wrap">
+          <div class="xp-bar"><div class="xp-bar-fill" [style.width.%]="levelProgressPct()"></div></div>
+          <div class="xp-bar-label">{{ m.points }} / {{ m.points + m.pointsToNextLevel }} pts</div>
+        </div>
+      </div>
+      <div class="xp-stats">
+        <div class="xp-stat">
+          <div class="val">{{ loadingBadges() ? '—' : ownedBadges().length }}</div>
+          <div class="key">Insignias</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Nota: el mockup incluía una "Racha semanal" con calendario
+         Lun–Dom, pero el contrato de la API no expone ningún dato de
+         racha (streak) en /api/missions/me ni en ningún otro endpoint.
+         La quitamos en vez de inventar datos falsos; si el backend
+         llega a exponerlo, se agrega aquí. -->
+
+    <!-- Misiones diarias -->
+    <div class="section-title" *ngIf="m.dailyMissions.length">Misiones diarias</div>
+    <div class="missions-grid" *ngIf="m.dailyMissions.length">
+      <div class="mission-card" *ngFor="let mission of m.dailyMissions" [class.completed]="mission.completed">
+        <div class="mission-card-head">
+          <div class="mission-card-icon" [class.green]="mission.completed">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 20h9M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
+            </svg>
+          </div>
+          <div class="mission-card-meta">
+            <div class="tag" [style.color]="mission.completed ? 'var(--success)' : null">
+              {{ mission.completed ? 'Completada ✓' : 'Diaria' }}
+            </div>
+            <h3>{{ mission.name }}</h3>
+            <p *ngIf="mission.description">{{ mission.description }}</p>
+          </div>
+          <div class="mission-reward" *ngIf="!mission.completed">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2l3 6.5 7 .8-5.2 4.9 1.4 7-6.2-3.6-6.2 3.6 1.4-7L2 9.3l7-.8z" />
+            </svg>
+            +{{ mission.rewardPoints }} pts
+          </div>
+          <div class="mission-complete-check" *ngIf="mission.completed">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          </div>
+        </div>
+
+        <div class="mc-bar-wrap" *ngIf="progressPct(mission.progress) as pct">
+          <div class="mc-bar"><span [style.width.%]="pct" [style.background]="mission.completed ? 'var(--success)' : null"></span></div>
+          <div class="mc-bar-label">
+            <span [style.color]="mission.completed ? 'var(--success)' : null">{{ mission.progress }}</span>
+            <strong [style.color]="mission.completed ? 'var(--success)' : null">{{ pct }}%</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Misiones de logro -->
+    <div class="section-title" *ngIf="m.achievementMissions.length">Logros</div>
+    <div class="missions-grid" *ngIf="m.achievementMissions.length">
+      <div class="mission-card" *ngFor="let mission of m.achievementMissions" [class.completed]="mission.completed">
+        <div class="mission-card-head">
+          <div class="mission-card-icon purple" [class.green]="mission.completed">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path
+                d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"
+              />
+            </svg>
+          </div>
+          <div class="mission-card-meta">
+            <div class="tag" [style.color]="mission.completed ? 'var(--success)' : '#c9a0ff'">
+              {{ mission.completed ? 'Completada ✓' : 'Logro' }}
+            </div>
+            <h3>{{ mission.name }}</h3>
+            <p *ngIf="mission.description">{{ mission.description }}</p>
+          </div>
+          <div class="mission-reward" style="color: #c9a0ff" *ngIf="!mission.completed">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2l3 6.5 7 .8-5.2 4.9 1.4 7-6.2-3.6-6.2 3.6 1.4-7L2 9.3l7-.8z" />
+            </svg>
+            +{{ mission.rewardPoints }} pts
+          </div>
+          <div class="mission-complete-check" *ngIf="mission.completed">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          </div>
+        </div>
+
+        <div class="mc-bar-wrap" *ngIf="progressPct(mission.progress) as pct">
+          <div class="mc-bar"><span [style.width.%]="pct" [style.background]="mission.completed ? 'var(--success)' : '#9B5DE5'"></span></div>
+          <div class="mc-bar-label">
+            <span [style.color]="mission.completed ? 'var(--success)' : null">{{ mission.progress }}</span>
+            <strong [style.color]="mission.completed ? 'var(--success)' : null">{{ pct }}%</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="page-status" *ngIf="!m.dailyMissions.length && !m.achievementMissions.length">
+      No tienes misiones activas por ahora.
+    </div>
+
+    <!-- Insignias conseguidas -->
+    <div class="badges-section-title">
+      Insignias conseguidas
+      <span *ngIf="!loadingBadges()">{{ ownedBadges().length }} desbloqueadas</span>
+    </div>
+
+    <div class="page-status" *ngIf="loadingBadges()">Cargando insignias…</div>
+    <div class="page-status error" *ngIf="!loadingBadges() && errorBadges()">{{ errorBadges() }}</div>
+    <div class="page-status" *ngIf="!loadingBadges() && !errorBadges() && ownedBadges().length === 0">
+      Todavía no tienes insignias. Consíguelas completando misiones o cómpralas en la tienda.
+    </div>
+
+    <div class="badges-showcase" *ngIf="!loadingBadges() && ownedBadges().length > 0">
+      <div class="badge-chip" *ngFor="let badge of ownedBadges()">
+        <div class="badge-icon-wrap">
+          <img *ngIf="badge.imageUrl" [src]="badge.imageUrl" [alt]="badge.name" />
+          <svg *ngIf="!badge.imageUrl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2l2.7 6.6L22 9l-5 4.6L18.5 22 12 17.8 5.5 22 7 13.6 2 9l7.3-.4z" />
+          </svg>
+        </div>
+        <div class="badge-chip-info">
+          <div class="bn">{{ badge.name }}</div>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+</div>

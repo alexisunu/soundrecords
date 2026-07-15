@@ -34,6 +34,19 @@
       </a>
     </div>
 
+    <!-- Solo visible para cuentas con role ARTIST -->
+    <div class="nav-group" *ngIf="(user$ | async)?.role === 'ARTIST'">
+      <div class="nav-label">Artista</div>
+
+      <a class="nav-item" routerLink="/artist/dashboard" routerLinkActive="active">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
+          <rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" />
+        </svg>
+        Dashboard
+      </a>
+    </div>
+
     <div class="nav-group">
       <div class="nav-label">Tu cuenta</div>
 
@@ -59,11 +72,21 @@
     <div class="nav-group">
       <div class="nav-label">Comunidad</div>
 
-      <a class="nav-item is-disabled" title="Próximamente">
+      <a class="nav-item" routerLink="/listener/missions" routerLinkActive="active">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M12 2l2.7 6.6L22 9l-5 4.6L18.5 22 12 17.8 5.5 22 7 13.6 2 9l7.3-.4z" />
         </svg>
         Misiones
+      </a>
+
+      <!-- VISTA 17 — centro de notificaciones -->
+      <a class="nav-item" routerLink="/notifications" routerLinkActive="active">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 8a6 6 0 10-12 0c0 5-2 6-2 6h16s-2-1-2-6z" />
+          <path d="M9.5 20a2.5 2.5 0 005 0" />
+        </svg>
+        Notificaciones
+        <span class="nav-badge" *ngIf="unreadNotifications > 0">{{ unreadNotifications }}</span>
       </a>
 
       <a class="nav-item is-disabled" title="Próximamente">
@@ -72,6 +95,26 @@
           <circle cx="12" cy="12" r="2.4" />
         </svg>
         Artistas emergentes
+      </a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-label">Premium</div>
+
+      <a class="nav-item" routerLink="/listener/early-access" routerLinkActive="active">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+        </svg>
+        Descubre Antes
+      </a>
+
+      <a class="nav-item" routerLink="/listener/badge-store" routerLinkActive="active">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
+          <line x1="3" y1="6" x2="21" y2="6" />
+          <path d="M16 10a4 4 0 01-8 0" />
+        </svg>
+        Tienda
       </a>
     </div>
   </nav>

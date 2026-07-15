@@ -1,1 +1,164 @@
-<p>notifications works!</p>
+<!--
+  VISTA 17 del mockup (MU_2.html). Se monta dentro de MainLayout, así
+  que el sidebar de la app ya viene dado; este componente solo arma el
+  contenido: 1fr (lista) + 300px (rail de preferencias), igual que
+  .notif-layout en el mockup pero sin la columna del sidebar.
+-->
+<div class="notif-layout">
+  <!-- Lista de notificaciones -->
+  <div class="notif-content">
+    <div class="notif-topbar">
+      <h1>Notificaciones</h1>
+      <div class="nt-right">
+        <span
+          class="nt-mark-all"
+          [class.disabled]="markingAllRead() || unreadCount() === 0"
+          (click)="markAllAsRead()"
+        >
+          Marcar todo como leído
+        </span>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="notif-tabs">
+      <div
+        class="notif-tab"
+        *ngFor="let tab of tabs"
+        [class.active]="activeTab() === tab.key"
+        (click)="selectTab(tab.key)"
+      >
+        {{ tab.label }}
+        <span class="ntab-count" *ngIf="tab.key === 'all' && unreadCount() > 0">{{ unreadCount() }}</span>
+      </div>
+    </div>
+
+    <div class="detail-status" *ngIf="loading()">Cargando tus notificaciones…</div>
+    <div class="detail-status error" *ngIf="!loading() && error()">{{ error() }}</div>
+
+    <ng-container *ngIf="!loading() && !error()">
+      <div class="notif-list" *ngIf="groupedNotifications().length; else emptyState">
+        <ng-container *ngFor="let group of groupedNotifications()">
+          <div class="notif-date-group">{{ group.label }}</div>
+
+          <div
+            class="notif-item"
+            *ngFor="let n of group.items"
+            [class.unread]="!n.isRead"
+            (click)="markAsRead(n)"
+          >
+            <div class="notif-item-icon">
+              <ng-container [ngSwitch]="n.type">
+                <!-- LIKE -->
+                <div class="ni-inner" style="background:rgba(241,95,108,0.12);" *ngSwitchCase="'LIKE'">
+                  <svg viewBox="0 0 24 24" fill="#f15f6c"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+                </div>
+                <!-- NEW_FOLLOWER -->
+                <div class="ni-inner" style="background:rgba(23,209,232,0.1);" *ngSwitchCase="'NEW_FOLLOWER'">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
+                </div>
+                <!-- MISSION_COMPLETED -->
+                <div class="ni-inner" style="background:rgba(255,186,0,0.1);" *ngSwitchCase="'MISSION_COMPLETED'">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#ffba00" stroke-width="2"><path d="M12 2l2.7 6.6L22 9l-5 4.6L18.5 22 12 17.8 5.5 22 7 13.6 2 9l7.3-.4z"/></svg>
+                </div>
+                <!-- NEW_BADGE -->
+                <div class="ni-inner" style="background:rgba(155,93,229,0.1);" *ngSwitchCase="'NEW_BADGE'">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#c9a0ff" stroke-width="2"><circle cx="12" cy="8" r="7"/><path d="M8.21 13.89L7 23l5-3 5 3-1.21-9.12"/></svg>
+                </div>
+                <!-- COMMENT -->
+                <div class="ni-inner" style="background:rgba(155,93,229,0.1);" *ngSwitchCase="'COMMENT'">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#c9a0ff" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                </div>
+                <!-- LEVEL_UP -->
+                <div class="ni-inner" style="background:rgba(23,209,232,0.1);" *ngSwitchCase="'LEVEL_UP'">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><polyline points="17 11 12 6 7 11"/><line x1="12" y1="6" x2="12" y2="18"/></svg>
+                </div>
+                <!-- ARTIST_RELEASE -->
+                <div class="ni-inner" style="background:rgba(23,209,232,0.1);" *ngSwitchCase="'ARTIST_RELEASE'">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                </div>
+              </ng-container>
+
+              <div class="ni-badge" style="background:#f15f6c;" *ngIf="n.type === 'LIKE'">
+                <svg viewBox="0 0 24 24" fill="#fff"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+              </div>
+              <div class="ni-badge" style="background:#ffba00;" *ngIf="n.type === 'MISSION_COMPLETED'">
+                <svg viewBox="0 0 24 24" fill="var(--bg)"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+            </div>
+
+            <div class="notif-item-body">
+              <div class="nb-text">{{ n.message }}</div>
+              <div class="nb-meta"><span>{{ timeAgo(n.createdAt) }}</span></div>
+            </div>
+
+            <div class="notif-item-thumb" *ngIf="hasThumb(n.type)"></div>
+            <div class="unread-dot" *ngIf="!n.isRead"></div>
+          </div>
+        </ng-container>
+      </div>
+
+      <ng-template #emptyState>
+        <div class="detail-status">No tienes notificaciones por aquí todavía.</div>
+      </ng-template>
+    </ng-container>
+  </div>
+
+  <!-- Rail de preferencias -->
+  <div class="notif-rail">
+    <div class="rail-title">Preferencias</div>
+    <div class="detail-status error" *ngIf="prefsError()">{{ prefsError() }}</div>
+
+    <div class="pref-group">
+      <h4>Social</h4>
+      <div class="pref-row">
+        <div class="pr-label">Likes a mis reseñas</div>
+        <div class="toggle" [class.on]="preferences().likes" (click)="togglePreference('likes')"></div>
+      </div>
+      <div class="pref-row">
+        <div class="pr-label">Nuevos seguidores</div>
+        <div class="toggle" [class.on]="preferences().newFollowers" (click)="togglePreference('newFollowers')"></div>
+      </div>
+      <div class="pref-row">
+        <div class="pr-label">Comentarios</div>
+        <div class="toggle" [class.on]="preferences().comments" (click)="togglePreference('comments')"></div>
+      </div>
+      <div class="pref-row">
+        <div class="pr-label">Menciones</div>
+        <div class="toggle" [class.on]="preferences().mentions" (click)="togglePreference('mentions')"></div>
+      </div>
+    </div>
+
+    <div class="pref-group">
+      <h4>Misiones y progreso</h4>
+      <div class="pref-row">
+        <div class="pr-label">Misión completada</div>
+        <div class="toggle" [class.on]="preferences().missionCompleted" (click)="togglePreference('missionCompleted')"></div>
+      </div>
+      <div class="pref-row">
+        <div class="pr-label">Nuevas insignias</div>
+        <div class="toggle" [class.on]="preferences().newBadges" (click)="togglePreference('newBadges')"></div>
+      </div>
+      <div class="pref-row">
+        <div class="pr-label">Subida de nivel</div>
+        <div class="toggle" [class.on]="preferences().levelUp" (click)="togglePreference('levelUp')"></div>
+      </div>
+    </div>
+
+    <div class="pref-group">
+      <h4>Lanzamientos</h4>
+      <div class="pref-row">
+        <div class="pr-label">Artistas que sigo</div>
+        <div class="toggle" [class.on]="preferences().artistReleases" (click)="togglePreference('artistReleases')"></div>
+      </div>
+    </div>
+
+    <div class="pref-group">
+      <h4>Email</h4>
+      <div class="pref-row">
+        <div class="pr-label">Resumen semanal</div>
+        <div class="toggle" [class.on]="preferences().weeklyEmailSummary" (click)="togglePreference('weeklyEmailSummary')"></div>
+      </div>
+    </div>
+  </div>
+</div>

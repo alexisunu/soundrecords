@@ -132,8 +132,8 @@ export class SettingsComponent implements OnInit {
   }
 
   selectPlan(plan: string): void {
-    // TODO: conectar con el flujo de pagos/suscripciones cuando esté disponible
-    alert(`Selección del plan "${plan}" próximamente disponible`);
+    const planCode = plan === 'Artista Premium' ? 'ARTIST_PREMIUM' : 'LISTENER_PREMIUM';
+    this.router.navigate(['/plans'], { queryParams: { plan: planCode } });
   }
 
   onDeleteAccount(): void {

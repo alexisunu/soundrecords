@@ -1,1 +1,156 @@
-<p>badge-store works!</p>
+<!--
+  VISTA 13 del mockup (MU_2.html). Se monta dentro de MainLayout, igual
+  que missions.html: aquí solo va el contenido "main" + rail.
+-->
+<div class="store-layout">
+  <main class="main">
+    <div class="topbar">
+      <div class="topbar-row">
+        <h1>Tienda de Insignias</h1>
+      </div>
+    </div>
+
+    <div class="store-content">
+      <div class="page-status" *ngIf="loading()">Cargando la tienda…</div>
+      <div class="page-status error" *ngIf="!loading() && error()">{{ error() }}</div>
+
+      <ng-container *ngIf="!loading() && !error()">
+        <!-- Hero -->
+        <div class="store-hero">
+          <div class="store-hero-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <path d="M16 10a4 4 0 01-8 0" />
+            </svg>
+          </div>
+          <div class="store-hero-info">
+            <h2>Tienda de Insignias</h2>
+            <p>Gana puntos completando misiones y canjéalos por insignias exclusivas para tu perfil</p>
+          </div>
+          <div class="store-coins">
+            <div class="coins-val">
+              <svg viewBox="0 0 24 24" fill="#ffba00" stroke="none">
+                <circle cx="12" cy="12" r="10" />
+                <path
+                  d="M12 6v.5M12 17.5V18M9 9h4.5a1.5 1.5 0 010 3h-3a1.5 1.5 0 000 3H15"
+                  stroke="rgba(0,0,0,0.4)"
+                  stroke-width="1.5"
+                  fill="none"
+                />
+              </svg>
+              {{ myPoints() | number }}
+            </div>
+            <div class="coins-label">Tus puntos disponibles</div>
+          </div>
+        </div>
+
+        <!-- Toasts de compra -->
+        <div class="store-toast success" *ngIf="successMessage()">{{ successMessage() }}</div>
+
+        <!-- Tabs -->
+        <div class="store-tabs">
+          <div
+            class="store-tab"
+            *ngFor="let tab of tabs"
+            [class.active]="activeTab() === tab.key"
+            (click)="selectTab(tab.key)"
+          >
+            {{ tab.label }}
+          </div>
+        </div>
+
+        <!-- Grid -->
+        <div class="store-grid" *ngIf="filteredBadges().length">
+          <div class="store-badge-card" *ngFor="let badge of filteredBadges()" [class.owned]="badge.owned">
+            <div
+              class="sbc-rarity"
+              *ngIf="!badge.owned"
+              [class.rarity-legendaria]="rarity(badge) === 'legendaria'"
+              [class.rarity-rara]="rarity(badge) === 'rara'"
+              [class.rarity-comun]="rarity(badge) === 'comun'"
+            >
+              {{ rarity(badge) === 'legendaria' ? 'Legendaria' : rarity(badge) === 'rara' ? 'Rara' : 'Común' }}
+            </div>
+            <div class="sbc-rarity owned-pill" *ngIf="badge.owned">En tu perfil</div>
+
+            <div class="sbc-badge-icon">
+              <img *ngIf="badge.imageUrl" [src]="badge.imageUrl" [alt]="badge.name" />
+              <svg *ngIf="!badge.imageUrl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path d="M12 2l2.7 6.6L22 9l-5 4.6L18.5 22 12 17.8 5.5 22 7 13.6 2 9l7.3-.4z" />
+              </svg>
+            </div>
+
+            <div class="sbc-name">{{ badge.name }}</div>
+
+            <div class="sbc-price" *ngIf="!badge.owned">
+              <svg viewBox="0 0 24 24" fill="#ffba00" stroke="none"><circle cx="12" cy="12" r="10" /></svg>
+              {{ badge.costPoints | number }} pts
+            </div>
+            <div class="sbc-price owned-price" *ngIf="badge.owned">✓ Adquirida</div>
+
+            <div class="sbc-buy-error" *ngIf="purchaseErrorId() === badge.id">{{ purchaseErrorMsg() }}</div>
+
+            <button
+              class="sbc-buy"
+              *ngIf="!badge.owned"
+              type="button"
+              [disabled]="!canAfford(badge) || purchasingId() === badge.id"
+              [style.opacity]="!canAfford(badge) ? 0.5 : null"
+              [style.cursor]="!canAfford(badge) ? 'not-allowed' : null"
+              (click)="purchase(badge)"
+            >
+              {{
+                purchasingId() === badge.id
+                  ? 'Canjeando…'
+                  : canAfford(badge)
+                    ? 'Canjear'
+                    : 'Puntos insuficientes'
+              }}
+            </button>
+            <a class="sbc-buy owned" *ngIf="badge.owned" routerLink="/listener/my-profile">Ver en perfil</a>
+          </div>
+        </div>
+
+        <div class="page-status" *ngIf="!filteredBadges().length">
+          No hay insignias en esta categoría por ahora.
+        </div>
+      </ng-container>
+    </div>
+  </main>
+
+  <!-- Rail -->
+  <aside class="rail" *ngIf="!loading() && !error()">
+    <div class="rail-card">
+      <h3>Cómo ganar puntos</h3>
+      <div class="earn-list">
+        <div class="earn-row">
+          <svg viewBox="0 0 24 24" fill="#ffba00"><circle cx="12" cy="12" r="10" /></svg>
+          <span>Completa misiones diarias y de logros</span>
+        </div>
+        <div class="earn-row">
+          <svg viewBox="0 0 24 24" fill="#ffba00"><circle cx="12" cy="12" r="10" /></svg>
+          <span>Sube de nivel escribiendo reseñas</span>
+        </div>
+        <div class="earn-row">
+          <svg viewBox="0 0 24 24" fill="#ffba00"><circle cx="12" cy="12" r="10" /></svg>
+          <span>Revisa tu progreso en Misiones</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="rail-card">
+      <h3>Resumen</h3>
+      <div class="store-summary">
+        <div class="summary-row">
+          <span>Insignias desbloqueadas</span>
+          <strong>{{ ownedCount() }} / {{ badges().length }}</strong>
+        </div>
+        <div class="summary-row">
+          <span>Tus puntos</span>
+          <strong>{{ myPoints() | number }}</strong>
+        </div>
+      </div>
+    </div>
+  </aside>
+</div>

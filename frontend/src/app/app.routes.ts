@@ -14,6 +14,11 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./modules/auth/register/register').then((m) => m.RegisterComponent),
   },
+  {
+    path: 'plans',
+    loadComponent: () =>
+      import('./modules/auth/plans/plans').then((m) => m.Plans),
+  },
 
   // Vistas autenticadas: comparten el sidebar a través de MainLayout.
   {
@@ -26,6 +31,16 @@ export const routes: Routes = [
         //canActivate: [authGuard],
         loadComponent: () =>
           import('./modules/auth/settings/settings').then((m) => m.SettingsComponent),
+      },
+
+      // VISTA 17 — centro de notificaciones (GET /api/notifications/me).
+      {
+        path: 'notifications',
+        //canActivate: [authGuard],
+        loadComponent: () =>
+          import('./modules/interaction/notifications/notifications').then(
+            (m) => m.Notifications,
+          ),
       },
       {
         path: 'listener/feed',
@@ -44,6 +59,24 @@ export const routes: Routes = [
         //canActivate: [authGuard],
         loadComponent: () =>
           import('./modules/listener/collections/collections').then((m) => m.Collections),
+      },
+      {
+        path: 'listener/missions',
+        //canActivate: [authGuard],
+        loadComponent: () =>
+          import('./modules/gamification/missions/missions').then((m) => m.Missions),
+      },
+      {
+        path: 'listener/badge-store',
+        //canActivate: [authGuard],
+        loadComponent: () =>
+          import('./modules/gamification/badge-store/badge-store').then((m) => m.BadgeStore),
+      },
+      {
+        path: 'listener/early-access',
+        //canActivate: [authGuard],
+        loadComponent: () =>
+          import('./modules/listener/early-acces/early-access').then((m) => m.EarlyAccess),
       },
       {
         path: 'listener/album-search',
@@ -68,6 +101,26 @@ export const routes: Routes = [
         //canActivate: [authGuard],
         loadComponent: () =>
           import('./modules/listener/review-editor/review-editor').then((m) => m.ReviewEditor),
+      },
+
+      // VISTA 16 — dashboard privado del artista (GET /api/artists/me/dashboard).
+      // ⚠️ Va ANTES que 'artist/:id': si quedara después, Angular
+      // interpretaría "dashboard" como el parámetro :id de la vista 15.
+      {
+        path: 'artist/dashboard',
+        //canActivate: [authGuard],
+        loadComponent: () =>
+          import('./modules/artist/artist-dashboard/artist-dashboard').then(
+            (m) => m.ArtistDashboard,
+          ),
+      },
+
+      // VISTA 15 — vista pública del artista (GET /api/artists/:id)
+      {
+        path: 'artist/:id',
+        //canActivate: [authGuard],
+        loadComponent: () =>
+          import('./modules/artist/artist-public/artist-public').then((m) => m.ArtistPublic),
       },
 
       // alias usado en el sidebar (routerLink="/home") -> apunta al feed del listener

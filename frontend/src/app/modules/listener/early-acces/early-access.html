@@ -1,0 +1,71 @@
+<!--
+  VISTA 14 del mockup (MU_2.html) — "Descubre Antes que Todos".
+  Implementada como estado "Próximamente": ver la nota en early-access.ts
+  sobre por qué no hay countdown ni lista de lanzamientos con datos reales.
+-->
+<div class="topbar">
+  <div class="topbar-row">
+    <h1>Descubre Antes que Todos</h1>
+  </div>
+</div>
+
+<div class="early-layout">
+  <div class="early-hero">
+    <div class="early-hero-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+      </svg>
+    </div>
+    <div class="early-hero-info">
+      <div class="premium-tag">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2l3 6.5 7 .8-5.2 4.9 1.4 7-6.2-3.6-6.2 3.6 1.4-7L2 9.3l7-.8z" />
+        </svg>
+        ACCESO ANTICIPADO · OYENTE PREMIUM
+      </div>
+      <h2>Antes que nadie, tú primero</h2>
+      <p>Escucha y reseña álbumes antes de su lanzamiento oficial. Disponible solo para suscriptores Premium.</p>
+    </div>
+  </div>
+
+  <!-- Filtros: se muestran fieles al mockup pero inertes, todavía no hay datos que filtrar -->
+  <div class="early-filters" [class.disabled]="true">
+    <div class="early-filter-pill" [class.active]="i === 0" *ngFor="let pill of filterPills; let i = index">
+      {{ pill }}
+    </div>
+  </div>
+
+  <!-- Estado "Próximamente" -->
+  <div class="coming-soon">
+    <div class="cs-icon">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <circle cx="12" cy="12" r="10" />
+        <path d="M12 8v4l3 3" />
+      </svg>
+    </div>
+    <h3>Estamos construyendo esto</h3>
+    <p>
+      El acceso anticipado a lanzamientos todavía no está disponible: necesita integración con fechas de
+      lanzamiento reales que el equipo de backend aún no expone. En cuanto esté listo, aquí verás los álbumes que
+      puedes escuchar y reseñar antes que el resto de la comunidad.
+    </p>
+
+    <ng-container *ngIf="currentUser() as user; else loadingUser">
+      <a
+        *ngIf="!user.isPremium"
+        class="btn-primary"
+        routerLink="/plans"
+        [queryParams]="{ plan: 'LISTENER_PREMIUM' }"
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M12 2l3 6.5 7 .8-5.2 4.9 1.4 7-6.2-3.6-6.2 3.6 1.4-7L2 9.3l7-.8z" />
+        </svg>
+        Hazte Oyente Premium
+      </a>
+      <div class="cs-premium-note" *ngIf="user.isPremium">
+        Ya eres Premium — cuando activemos esta función, la tendrás incluida sin costo extra.
+      </div>
+    </ng-container>
+    <ng-template #loadingUser></ng-template>
+  </div>
+</div>

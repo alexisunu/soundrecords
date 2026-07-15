@@ -1,1 +1,149 @@
-<p>artist-dashboard works!</p>
+<!--
+  VISTA 16 del mockup (MU_2.html). Se monta dentro de MainLayout, así
+  que el sidebar de la app ya viene dado.
+-->
+<div class="dash-content">
+  <!-- Caso: usuario autenticado pero sin role ARTIST -->
+  <div class="not-artist-card" *ngIf="notAnArtist()">
+    <h2>Este panel es solo para artistas</h2>
+    <p>
+      Todavía no tienes un perfil de artista en SoundRecords. Puedes crear uno al suscribirte al
+      plan Artista Premium.
+    </p>
+    <a class="btn-primary" routerLink="/plans" [queryParams]="{ plan: 'ARTIST_PREMIUM' }">
+      Ver plan Artista Premium
+    </a>
+  </div>
+
+  <div class="detail-status" *ngIf="loadingDashboard()">Cargando tu dashboard…</div>
+  <div class="detail-status error" *ngIf="!loadingDashboard() && dashboardError()">
+    {{ dashboardError() }}
+  </div>
+
+  <ng-container *ngIf="!loadingDashboard() && !dashboardError() && !notAnArtist() && dashboard() as d">
+    <div class="dash-greeting">
+      <h1>Bienvenido de vuelta{{ currentUser()?.username ? ', ' + currentUser()?.username : '' }}</h1>
+      <p>Aquí está el rendimiento de tu música en SoundRecords</p>
+    </div>
+
+    <!-- KPIs: sólo lo que el contrato realmente respalda (no hay
+         seguidores ni likes totales en este endpoint). -->
+    <div class="kpi-row">
+      <div class="kpi-card">
+        <div class="kc-icon" style="background:rgba(23,209,232,0.1);">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2">
+            <path d="M12 20h9M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
+          </svg>
+        </div>
+        <div class="kc-val">{{ d.totalReviews }}</div>
+        <div class="kc-label">Reseñas totales</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kc-icon" style="background:rgba(155,93,229,0.1);">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#c9a0ff" stroke-width="2">
+            <path
+              d="M12 2l2.7 6.6L22 9l-5 4.6L18.5 22 12 17.8 5.5 22 7 13.6 2 9l7.3-.4z"
+            />
+          </svg>
+        </div>
+        <div class="kc-val" style="color:#c9a0ff;">{{ formattedRating(d.averageRating) }}</div>
+        <div class="kc-label">Calificación promedio</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kc-icon" style="background:rgba(46,232,154,0.1);">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+            <circle cx="12" cy="12" r="3" />
+          </svg>
+        </div>
+        <div class="kc-val" style="color:var(--success);">{{ d.profileViews }}</div>
+        <div class="kc-label">Vistas de perfil</div>
+      </div>
+    </div>
+
+    <!-- Boost de visibilidad -->
+    <div class="boost-alert" *ngIf="d.isPremium">
+      <div class="ba-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+        </svg>
+      </div>
+      <div class="ba-info">
+        <div class="ba-title">Boost de visibilidad</div>
+        <div class="ba-sub" *ngIf="boostActive() === null">
+          Destaca tu álbum más reciente en el feed de tus seguidores durante 48h.
+        </div>
+        <div class="ba-sub" *ngIf="boostActive() === true">Boost activo ahora mismo.</div>
+        <div class="ba-sub" *ngIf="boostActive() === false">Boost desactivado.</div>
+        <div class="ba-sub error" *ngIf="boostError()">{{ boostError() }}</div>
+      </div>
+      <button class="btn-purple" [disabled]="boostInFlight()" (click)="toggleBoost()">
+        {{
+          boostInFlight()
+            ? '...'
+            : boostActive() === true
+              ? 'Desactivar Boost'
+              : 'Usar Boost'
+        }}
+      </button>
+    </div>
+
+    <div class="upsell-card" *ngIf="!d.isPremium">
+      <div class="upsell-info">
+        <div class="upsell-title">Desbloquea analíticas avanzadas y Boost de visibilidad</div>
+        <div class="upsell-sub">
+          Con Artista Premium accedes a vistas por semana, ciudades de tu audiencia y puedes
+          destacar tus álbumes en el feed de tus seguidores.
+        </div>
+      </div>
+      <a class="btn-purple" routerLink="/plans" [queryParams]="{ plan: 'ARTIST_PREMIUM' }">
+        Ver Artista Premium
+      </a>
+    </div>
+
+    <!-- Analíticas avanzadas: solo si isPremium (el contrato dice que
+         advancedStats viene null si no). -->
+    <ng-container *ngIf="d.isPremium && d.advancedStats as stats">
+      <div class="dash-chart-row">
+        <div class="dash-chart-card">
+          <h3>Vistas de tu perfil</h3>
+          <div class="dcc-sub">Últimas {{ stats.weeklyViews.length }} semanas</div>
+          <div class="chart-bars" *ngIf="stats.weeklyViews.length">
+            <div class="chart-bar-wrap" *ngFor="let value of stats.weeklyViews; let i = index; let last = last">
+              <div
+                class="chart-bar"
+                [class.is-last]="last"
+                [style.height.%]="barHeightPct(value) || 2"
+                [title]="value + ' vistas'"
+              ></div>
+              <div class="chart-bar-label" [class.is-last]="last">S{{ i + 1 }}</div>
+            </div>
+          </div>
+          <div class="detail-status" *ngIf="!stats.weeklyViews.length">
+            Todavía no hay suficientes datos de vistas.
+          </div>
+        </div>
+
+        <div class="dash-chart-card">
+          <h3>Top ciudades</h3>
+          <div class="dcc-sub">De tu audiencia</div>
+          <div class="city-tags" *ngIf="stats.topCities.length">
+            <span class="city-tag" *ngFor="let city of stats.topCities">{{ city }}</span>
+          </div>
+          <div class="detail-status" *ngIf="!stats.topCities.length">
+            Todavía no hay suficientes datos de audiencia.
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- Reseñas recientes de tu música: no hay endpoint que las
+         devuelva agrupadas por artista todavía. -->
+    <div class="soon-card">
+      <div class="soon-title">Reseñas recientes de tu música</div>
+      <div class="soon-sub">Próximamente</div>
+    </div>
+  </ng-container>
+</div>
