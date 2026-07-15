@@ -1,0 +1,134 @@
+:host {
+  --bg: #0a1128;
+  --accent: #17d1e8;
+  --accent-2: #9b5de5;
+  --text: #ffffff;
+  --text-secondary: #8f9cae;
+  --card: #131c38;
+  --card-border: rgba(143, 156, 174, 0.14);
+  --accent-glow: rgba(23, 209, 232, 0.25);
+  --danger: #f15f6c;
+  --success: #2ee89a;
+
+  display: block;
+  font-family: 'Inter', sans-serif;
+  color: var(--text);
+}
+
+.topbar {
+  padding: 28px 28px 18px;
+}
+.topbar-row h1 {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.discover-hero {
+  background: linear-gradient(180deg, rgba(155, 93, 229, 0.1) 0%, transparent 100%);
+  border-bottom: 1px solid var(--card-border);
+  padding: 32px 28px 24px;
+}
+.discover-hero h2 {
+  font-size: 26px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.discover-hero p {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.discover-content {
+  padding: 24px 28px 60px;
+}
+
+.discover-status {
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  padding: 10px 0 24px;
+  line-height: 1.6;
+}
+.discover-status.error {
+  color: var(--danger);
+}
+
+.artist-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 16px;
+}
+.artist-card {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  padding: 18px 16px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  transition:
+    border-color 0.15s,
+    transform 0.15s;
+}
+.artist-card:hover {
+  border-color: rgba(23, 209, 232, 0.35);
+  transform: translateY(-2px);
+}
+
+.artist-photo-wrap {
+  position: relative;
+  width: 84px;
+  height: 84px;
+  margin-bottom: 14px;
+}
+.artist-photo {
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.artist-photo-placeholder {
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1b2750, #0d1430);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.artist-premium-badge {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #ffba00;
+  color: var(--bg);
+  border: 2px solid var(--card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.artist-name {
+  font-size: 14.5px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.artist-genres {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+.genre-chip {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: rgba(143, 156, 174, 0.1);
+  border-radius: 20px;
+  padding: 3px 9px;
+}

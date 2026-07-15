@@ -9,6 +9,7 @@ import {
   LikeResponse,
   ReportReason,
   Review,
+  UserReviewsResponse,
 } from '../models/review.model';
 
 /**
@@ -35,6 +36,12 @@ export class ReviewService {
   // GET /api/reviews/album/{spotifyAlbumId}
   getAlbumReviews(spotifyAlbumId: string): Observable<AlbumReviewsResponse> {
     return this.http.get<AlbumReviewsResponse>(`${this.baseUrl}/album/${spotifyAlbumId}`);
+  }
+
+  // GET /api/reviews/user/{userId} - reseñas hechas por un usuario puntual
+  // (usado en Mi Perfil / perfil público, pestaña "Reseñas").
+  getByUser(userId: string): Observable<UserReviewsResponse> {
+    return this.http.get<UserReviewsResponse>(`${this.baseUrl}/user/${userId}`);
   }
 
   // GET /api/reviews/{id}

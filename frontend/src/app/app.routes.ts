@@ -103,6 +103,16 @@ export const routes: Routes = [
           import('./modules/listener/review-editor/review-editor').then((m) => m.ReviewEditor),
       },
 
+      // Descubre — artistas emergentes (GET /api/artists/discover).
+      // Va ANTES que 'artist/dashboard' y 'artist/:id' solo por orden de
+      // lectura; no hay conflicto de rutas porque vive bajo 'listener/'.
+      {
+        path: 'listener/discover',
+        //canActivate: [authGuard],
+        loadComponent: () =>
+          import('./modules/artist/discover/discover').then((m) => m.Discover),
+      },
+
       // VISTA 16 — dashboard privado del artista (GET /api/artists/me/dashboard).
       // ⚠️ Va ANTES que 'artist/:id': si quedara después, Angular
       // interpretaría "dashboard" como el parámetro :id de la vista 15.
@@ -121,6 +131,14 @@ export const routes: Routes = [
         //canActivate: [authGuard],
         loadComponent: () =>
           import('./modules/artist/artist-public/artist-public').then((m) => m.ArtistPublic),
+      },
+
+      // Quiénes somos + recursos curados para artistas nuevos (vista
+      // puramente informativa, no consume ningún endpoint del contrato).
+      {
+        path: 'about',
+        loadComponent: () =>
+          import('./modules/info/about/about').then((m) => m.About),
       },
 
       // alias usado en el sidebar (routerLink="/home") -> apunta al feed del listener

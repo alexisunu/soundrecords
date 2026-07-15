@@ -53,7 +53,11 @@ export class Collections implements OnInit {
       )
       .subscribe((res) => {
         this.loading.set(false);
-        if (res) this.lists.set(res.collections);
+        // ⚠️ FIX: nunca guardar `undefined`/`null` en el signal. Antes,
+        // si `res.collections` venía vacío/undefined del backend, el
+        // signal se quedaba en undefined y el template explotaba con
+        // "ctx_r0.lists() is undefined" al leer lists().length.
+        this.lists.set(res?.collections ?? []);
       });
   }
 
@@ -88,10 +92,11 @@ export class Collections implements OnInit {
           // El contrato responde { id, name, albumsCount } (0), sin
           // description en el ejemplo -- igual usamos lo que llegue y
           // completamos con lo que el usuario tecleó por si el backend
-          // no lo devuelve.
+          // no lo devuelve. `current` siempre es un array por el fix
+          // de arriba, así que el spread nunca falla acá.
           this.lists.update((current) => [
-            { ...created, description: created.description ?? this.newDescription().trim() },
-            ...current,
+            { ...created, description: created?.description ?? this.newDescription().trim() },
+            ...(current ?? []),
           ]);
         },
         error: (err) => {
@@ -114,7 +119,7 @@ export class Collections implements OnInit {
     this.collectionService.deleteCollection(list.id).subscribe({
       next: () => {
         this.deletingId.set(null);
-        this.lists.update((current) => current.filter((l) => l.id !== list.id));
+        this.lists.update((current) => (current ?? []).filter((l) => l.id !== list.id));
       },
       error: () => {
         this.deletingId.set(null);

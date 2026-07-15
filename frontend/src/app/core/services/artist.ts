@@ -9,6 +9,7 @@ import {
   BecomeArtistResponse,
   BoostRequest,
   BoostResponse,
+  DiscoverArtistsResponse,
   UpdateArtistProfileRequest,
   UpdateArtistProfileResponse,
 } from '../models/artist.model';
@@ -26,6 +27,14 @@ export class ArtistService {
   becomeArtist(body: BecomeArtistRequest): Observable<BecomeArtistResponse> {
     return this.http
       .post<BecomeArtistResponse>(`${this.baseUrl}`, body)
+      .pipe(timeout(this.REQUEST_TIMEOUT_MS));
+  }
+
+  // GET /api/artists/discover — Premium (boost) primero, luego el resto
+  // ordenado por profileViews. Usado por la vista Descubre.
+  discover(): Observable<DiscoverArtistsResponse> {
+    return this.http
+      .get<DiscoverArtistsResponse>(`${this.baseUrl}/discover`)
       .pipe(timeout(this.REQUEST_TIMEOUT_MS));
   }
 

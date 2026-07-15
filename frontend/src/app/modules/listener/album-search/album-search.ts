@@ -1,13 +1,15 @@
-import { Component, OnDestroy, OnInit, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { of, Subject } from 'rxjs';
 import { catchError, debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 import { AlbumService } from '../../../core/services/album';
+import { ArtistService } from '../../../core/services/artist';
 import { AlbumSearchResult } from '../../../core/models/album.model';
+import { DiscoverArtist } from '../../../core/models/artist.model';
 
-type FilterChip = 'all' | '2020s';
+type FilterChip = 'albums' | 'artists' | 'users';
 
 @Component({
   selector: 'app-album-search',
@@ -23,16 +25,41 @@ export class AlbumSearch implements OnInit, OnDestroy {
   // le avisan al framework que hay que repintar. Por eso todo el
   // estado reactivo de este componente va en signals.
   query = signal('');
-  results = signal<AlbumSearchResult[]>([]);
+  activeFilter = signal<FilterChip>('albums');
   loading = signal(false);
   searched = signal(false);
   errorMessage = signal<string | null>(null);
-  activeFilter = signal<FilterChip>('all');
+
+  // ===== Álbumes: GET /api/spotify/search?q=... (real, paginado por texto) =====
+  albumResults = signal<AlbumSearchResult[]>([]);
+
+  // ===== Artistas emergentes: GET /api/artists/discover =====
+  // El contrato NO documenta ningún parámetro de búsqueda para este
+  // endpoint (solo ordena boost/profileViews), así que la lista
+  // completa se trae una sola vez y se filtra en el frontend por
+  // nombre o género cuando hay texto escrito.
+  private allEmergingArtists = signal<DiscoverArtist[] | null>(null);
+  artistResults = computed(() => {
+    const all = this.allEmergingArtists();
+    if (all === null) return [];
+    const q = this.query().trim().toLowerCase();
+    if (!q) return all;
+    return all.filter(
+      (a) => a.artistName.toLowerCase().includes(q) || a.genres.toLowerCase().includes(q),
+    );
+  });
+
+  // ===== Usuarios: sin endpoint en el contrato v1.0 (no existe un
+  // GET /api/users/search ni similar entre los 43 endpoints). Se deja
+  // el filtro visible para respetar el mockup, con mensaje honesto de
+  // "próximamente", igual que se hizo antes con Tendencias/Nuevos
+  // lanzamientos en el feed. =====
 
   private queryChanged = new Subject<string>();
 
   constructor(
     private albumService: AlbumService,
+    private artistService: ArtistService,
     private router: Router,
   ) {}
 
@@ -46,16 +73,15 @@ export class AlbumSearch implements OnInit, OnDestroy {
           if (!trimmed) {
             this.loading.set(false);
             this.searched.set(false);
-            this.results.set([]);
+            this.albumResults.set([]);
             // No golpeamos el backend con q="": cortamos con null y lo
             // filtramos en el subscribe de abajo.
             return of(null);
           }
           this.loading.set(true);
           this.errorMessage.set(null);
-          const year = this.activeFilter() === '2020s' ? '2020' : undefined;
 
-          return this.albumService.search(trimmed, undefined, year).pipe(
+          return this.albumService.search(trimmed).pipe(
             // catchError DENTRO del switchMap: si se propaga hasta el
             // subscribe de abajo, mata toda la suscripción al Subject
             // y ninguna búsqueda posterior vuelve a disparar.
@@ -72,12 +98,11 @@ export class AlbumSearch implements OnInit, OnDestroy {
         }),
       )
       .subscribe((res) => {
-        console.log('Respuesta de búsqueda de álbumes:', res);
         if (!res) return; // caso q="" o error, ya manejados arriba
         this.searched.set(true);
         // El backend real devuelve un array plano (List<AlbumResponse>),
         // no { results: [...] } como documenta el contrato v1.0.
-        this.results.set(res ?? []);
+        this.albumResults.set(res ?? []);
         this.loading.set(false);
       });
   }
@@ -88,20 +113,58 @@ export class AlbumSearch implements OnInit, OnDestroy {
 
   onQueryInput(value: string): void {
     this.query.set(value);
-    this.queryChanged.next(value);
+    if (this.activeFilter() === 'albums') {
+      this.queryChanged.next(value);
+    }
+    // Para "Artistas emergentes" no hace falta re-pedir nada al backend:
+    // artistResults() es un computed() que refiltra allEmergingArtists()
+    // en cada tecla. "Usuarios" no tiene datos que filtrar todavía.
   }
 
   selectFilter(filter: FilterChip): void {
+    if (this.activeFilter() === filter) return;
     this.activeFilter.set(filter);
-    // Reaplicamos la búsqueda actual con el filtro nuevo (si hay texto).
-    if (this.query().trim()) {
-      this.queryChanged.next(this.query());
+    this.errorMessage.set(null);
+
+    if (filter === 'albums') {
+      this.searched.set(false);
+      this.albumResults.set([]);
+      if (this.query().trim()) this.queryChanged.next(this.query());
+      return;
+    }
+
+    if (filter === 'artists' && this.allEmergingArtists() === null) {
+      this.loadEmergingArtists();
     }
   }
 
+  private loadEmergingArtists(): void {
+    this.loading.set(true);
+    this.artistService
+      .discover()
+      .pipe(
+        catchError((err) => {
+          this.errorMessage.set(
+            err?.name === 'TimeoutError'
+              ? 'La carga está tardando demasiado. Intenta de nuevo.'
+              : 'No pudimos cargar artistas emergentes.',
+          );
+          this.loading.set(false);
+          return of(null);
+        }),
+      )
+      .subscribe((res) => {
+        this.loading.set(false);
+        if (res) this.allEmergingArtists.set(res.artists);
+      });
+  }
+
   goToAlbum(album: AlbumSearchResult): void {
-    console.log('Album seleccionado para navegación:', album);
     this.router.navigate(['/listener/album', album.spotifyAlbumId]);
+  }
+
+  goToArtist(artist: DiscoverArtist): void {
+    this.router.navigate(['/artist', artist.id]);
   }
 
   formatRating(album: AlbumSearchResult): string {

@@ -52,6 +52,16 @@ export interface AlbumReviewsResponse {
   myReview?: Review | null;
 }
 
+/**
+ * GET /api/reviews/user/{userId} — reseñas hechas por un usuario
+ * puntual (se usa en Mi Perfil / perfil público para la pestaña
+ * "Reseñas"). El contrato no documenta paginación para este endpoint
+ * todavía, así que se asume que trae todas de una vez.
+ */
+export interface UserReviewsResponse {
+  reviews: Review[];
+}
+
 export interface LikeResponse {
   liked: boolean;
   likesCount: number;

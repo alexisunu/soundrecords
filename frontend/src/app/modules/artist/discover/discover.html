@@ -1,1 +1,46 @@
-<p>discover works!</p>
+<!--
+  Descubre. Antes esta vista se pensaba armar de otra manera; ahora
+  muestra los artistas emergentes reales que tenemos en la plataforma
+  vía GET /api/artists/discover (Premium/boost primero, luego el resto
+  por profileViews). Se monta dentro de MainLayout.
+-->
+<div class="topbar">
+  <div class="topbar-row">
+    <h1>Descubre</h1>
+  </div>
+</div>
+
+<div class="discover-hero">
+  <h2>Artistas emergentes</h2>
+  <p>Nuevos talentos en SoundRecords, elegidos por la comunidad y potenciados por nuestros artistas Premium</p>
+</div>
+
+<div class="discover-content">
+  <div class="discover-status" *ngIf="loading()">Buscando artistas emergentes…</div>
+  <div class="discover-status error" *ngIf="!loading() && errorMessage()">{{ errorMessage() }}</div>
+  <div class="discover-status" *ngIf="!loading() && !errorMessage() && artists().length === 0">
+    Todavía no hay artistas para mostrar aquí.
+  </div>
+
+  <div class="artist-grid" *ngIf="!loading() && !errorMessage() && artists().length > 0">
+    <div class="artist-card" *ngFor="let artist of artists()" (click)="goToArtist(artist)">
+      <div class="artist-photo-wrap">
+        <img *ngIf="artist.photoUrl" class="artist-photo" [src]="artist.photoUrl" [alt]="artist.artistName" />
+        <div *ngIf="!artist.photoUrl" class="artist-photo-placeholder">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(143,156,174,0.35)" stroke-width="1.5">
+            <circle cx="12" cy="8" r="4" />
+            <path d="M4 21c0-4 3.5-7 8-7s8 3 8 7" />
+          </svg>
+        </div>
+        <div class="artist-premium-badge" *ngIf="artist.isPremium" title="Artista Premium">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.7 6.6L22 9l-5 4.6L18.5 22 12 17.8 5.5 22 7 13.6 2 9l7.3-.4z"/></svg>
+        </div>
+      </div>
+
+      <div class="artist-name">{{ artist.artistName }}</div>
+      <div class="artist-genres">
+        <span class="genre-chip" *ngFor="let g of genreList(artist.genres)">{{ g }}</span>
+      </div>
+    </div>
+  </div>
+</div>

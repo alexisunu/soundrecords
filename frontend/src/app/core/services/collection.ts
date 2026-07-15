@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { timeout } from 'rxjs/operators';
+import { map, timeout } from 'rxjs/operators';
 import {
   AddAlbumResponse,
   Collection,
@@ -20,10 +20,24 @@ export class CollectionService {
   constructor(private http: HttpClient) {}
 
   // GET /api/collections/me
+  //
+  // ⚠️ FIX: el error "ctx_r0.lists() is undefined" en Mis Listas pasaba
+  // porque, si el backend responde con un shape distinto al esperado
+  // (por ejemplo el array de colecciones directo, sin el wrapper
+  // { collections: [...] }, o con la key en null), hacíamos
+  // `this.lists.set(res.collections)` con `undefined` y el signal se
+  // quedaba en undefined para siempre (ya no volvía a [] con nada).
+  // Normalizamos acá para que SIEMPRE llegue un array, sin importar
+  // cómo responda el backend.
   getMyCollections(): Observable<CollectionsResponse> {
     return this.http
-      .get<CollectionsResponse>(`${this.baseUrl}/me`)
-      .pipe(timeout(this.REQUEST_TIMEOUT_MS));
+      .get<CollectionsResponse | Collection[]>(`${this.baseUrl}/me`)
+      .pipe(
+        timeout(this.REQUEST_TIMEOUT_MS),
+        map((res) => ({
+          collections: Array.isArray(res) ? res : (res?.collections ?? []),
+        })),
+      );
   }
 
   // POST /api/collections

@@ -52,7 +52,7 @@
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
               <path d="M12 2l3 6.5 7 .8-5.2 4.9 1.4 7-6.2-3.6-6.2 3.6 1.4-7L2 9.3l7-.8z" />
             </svg>
-            {{ a.myReview ? 'Editar mi reseña' : 'Escribir reseña' }}
+            {{ myReview() ? 'Editar mi reseña' : 'Escribir reseña' }}
           </a>
           <div class="list-picker-wrap">
             <button class="btn-ghost" (click)="toggleListPicker()">

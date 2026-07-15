@@ -1,9 +1,11 @@
-import { Component, signal } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { catchError, of } from 'rxjs';
 import { AlbumService } from '../../../core/services/album';
+import { ArtistService } from '../../../core/services/artist';
 import { AlbumSearchResult } from '../../../core/models/album.model';
+import { DiscoverArtist } from '../../../core/models/artist.model';
 
 interface Genre {
   id: string;
@@ -19,7 +21,7 @@ interface Genre {
   templateUrl: './explore.html',
   styleUrl: './explore.scss',
 })
-export class Explore {
+export class Explore implements OnInit {
   // El contrato (v1.0) no expone ningún endpoint de catálogo de géneros
   // con conteo de reseñas (algo tipo GET /api/spotify/genres), así que
   // esta lista es estática en el frontend. Lo que SÍ es real es el
@@ -41,10 +43,46 @@ export class Explore {
   loading = signal(false);
   errorMessage = signal<string | null>(null);
 
+  // GET /api/artists/discover — "Descubre artistas emergentes". Antes
+  // esta sección de abajo era un placeholder de "Trending" sin backend
+  // real (no existe GET /api/spotify/trending en el contrato). La
+  // reemplazamos por el endpoint de discover, que sí está documentado
+  // en ArtistController y antes solo vivía como un ítem deshabilitado
+  // ("Próximamente") en el sidebar.
+  emergingArtists = signal<DiscoverArtist[]>([]);
+  loadingArtists = signal(true);
+  errorArtists = signal<string | null>(null);
+
   constructor(
     private albumService: AlbumService,
+    private artistService: ArtistService,
     private router: Router,
   ) {}
+
+  ngOnInit(): void {
+    this.loadEmergingArtists();
+  }
+
+  private loadEmergingArtists(): void {
+    this.loadingArtists.set(true);
+    this.errorArtists.set(null);
+    this.artistService
+      .discover()
+      .pipe(
+        catchError((err) => {
+          this.errorArtists.set(
+            err?.name === 'TimeoutError'
+              ? 'La carga está tardando demasiado. Intenta de nuevo.'
+              : 'No pudimos cargar artistas emergentes.',
+          );
+          return of(null);
+        }),
+      )
+      .subscribe((res) => {
+        this.loadingArtists.set(false);
+        if (res) this.emergingArtists.set(res.artists);
+      });
+  }
 
   selectGenre(genre: Genre): void {
     if (this.selectedGenre()?.id === genre.id) {
@@ -83,6 +121,10 @@ export class Explore {
 
   goToAlbum(album: AlbumSearchResult): void {
     this.router.navigate(['/listener/album', album.spotifyAlbumId]);
+  }
+
+  goToArtist(artist: DiscoverArtist): void {
+    this.router.navigate(['/artist', artist.id]);
   }
 
   formatRating(album: AlbumSearchResult): string {

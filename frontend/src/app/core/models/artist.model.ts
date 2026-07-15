@@ -52,6 +52,24 @@ export interface ArtistPublicProfile {
 }
 
 /**
+ * GET /api/artists/discover — usado por la vista Descubre (VISTA de
+ * "Artistas emergentes"). El contrato dice que los artistas Premium
+ * (boost activo) salen primero, y luego el resto ordenado por
+ * profileViews. No trae paginación ni filtros por género en v1.0.
+ */
+export interface DiscoverArtist {
+  id: string;
+  artistName: string;
+  photoUrl?: string;
+  genres: string;
+  isPremium: boolean;
+}
+
+export interface DiscoverArtistsResponse {
+  artists: DiscoverArtist[];
+}
+
+/**
  * GET /api/artists/me/dashboard — advancedStats solo viene poblado si
  * isPremium es true; si no, el contrato dice que el campo llega null.
  * ⚠️ El contrato NO expone followersCount, likesCount, ni un desglose

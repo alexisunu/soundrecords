@@ -2,13 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { timeout } from 'rxjs/operators';
-import {
-  MarkAllReadResponse,
-  MarkReadResponse,
-  NotificationPreferences,
-  NotificationsResponse,
-  UpdatePreferencesResponse,
-} from '../models/notification.model';
+import { MarkAllReadResponse, MarkReadResponse, NotificationsResponse } from '../models/notification.model';
 
 @Injectable({
   providedIn: 'root',
@@ -37,13 +31,6 @@ export class NotificationService {
   markAllRead(): Observable<MarkAllReadResponse> {
     return this.http
       .patch<MarkAllReadResponse>(`${this.baseUrl}/read-all`, {})
-      .pipe(timeout(this.REQUEST_TIMEOUT_MS));
-  }
-
-  // PATCH /api/notifications/preferences
-  updatePreferences(prefs: NotificationPreferences): Observable<UpdatePreferencesResponse> {
-    return this.http
-      .patch<UpdatePreferencesResponse>(`${this.baseUrl}/preferences`, prefs)
       .pipe(timeout(this.REQUEST_TIMEOUT_MS));
   }
 }

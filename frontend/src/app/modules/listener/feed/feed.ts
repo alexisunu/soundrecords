@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { Subscription } from 'rxjs';
@@ -6,8 +6,6 @@ import { ReviewCard } from '../../../shared/review-card/review-card';
 import { ReviewService } from '../../../core/services/review';
 import { Review } from '../../../core/models/review.model';
 import { AuthService } from '../../../core/services/auth';
-
-type FeedTab = 'following' | 'trending' | 'new-releases';
 
 @Component({
   selector: 'app-feed',
@@ -17,13 +15,17 @@ type FeedTab = 'following' | 'trending' | 'new-releases';
   styleUrl: './feed.scss',
 })
 export class Feed implements OnInit, OnDestroy {
-  reviews: Review[] = [];
-  loading = true;
-  errorMessage: string | null = null;
-  page = 0;
-  hasMore = false;
-
-  activeTab: FeedTab = 'following';
+  // Usamos signals (en vez de propiedades planas) porque la app corre en
+  // modo zoneless: las respuestas HTTP llegan fuera de cualquier evento de
+  // plantilla, así que solo un write a un signal (o un ChangeDetectorRef
+  // manual) garantiza que Angular repinte la vista. Antes, al asignar
+  // "this.reviews = res.reviews" en el subscribe, la vista quedaba
+  // desactualizada hasta el próximo clic en la página.
+  reviews = signal<Review[]>([]);
+  loading = signal(true);
+  errorMessage = signal<string | null>(null);
+  page = signal(0);
+  hasMore = signal(false);
 
   private userSub?: Subscription;
 
@@ -43,45 +45,34 @@ export class Feed implements OnInit, OnDestroy {
     this.userSub?.unsubscribe();
   }
 
-  selectTab(tab: FeedTab): void {
-    this.activeTab = tab;
-    if (tab === 'following') {
-      this.loadFeed(0);
-    }
-    // "Tendencias" y "Nuevos lanzamientos" no tienen endpoint todavía en el
-    // API Contract v1.0 (solo existe GET /api/reviews/feed). Se dejan las
-    // pestañas visibles para respetar el mockup, pero sin datos reales
-    // hasta que el backend defina esas rutas.
-  }
-
   loadFeed(page: number): void {
-    this.loading = true;
-    this.errorMessage = null;
+    this.loading.set(true);
+    this.errorMessage.set(null);
     this.reviewService.getFeed(page).subscribe({
       next: (res) => {
-        this.reviews = res.reviews;
-        this.page = res.page;
-        this.hasMore = res.hasMore;
-        this.loading = false;
+        this.reviews.set(res.reviews);
+        this.page.set(res.page);
+        this.hasMore.set(res.hasMore);
+        this.loading.set(false);
       },
       error: () => {
-        this.errorMessage = 'No pudimos cargar tu feed. Intenta de nuevo.';
-        this.loading = false;
+        this.errorMessage.set('No pudimos cargar tu feed. Intenta de nuevo.');
+        this.loading.set(false);
       },
     });
   }
 
   goToPage(page: number): void {
     if (page < 0) return;
-    if (page > this.page && !this.hasMore) return;
+    if (page > this.page() && !this.hasMore()) return;
     this.loadFeed(page);
   }
 
   get pageNumbers(): number[] {
     // La API solo retorna hasMore (no un total de páginas), así que
     // mostramos la página actual y, si hay más, la siguiente conocida.
-    const nums = [this.page];
-    if (this.hasMore) nums.push(this.page + 1);
+    const nums = [this.page()];
+    if (this.hasMore()) nums.push(this.page() + 1);
     return nums;
   }
 }

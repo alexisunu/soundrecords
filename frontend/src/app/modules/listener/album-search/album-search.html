@@ -26,54 +26,114 @@
   </div>
 
   <div class="search-filters">
-    <div class="filter-chip" [class.active]="activeFilter() === 'all'" (click)="selectFilter('all')">Todos</div>
-    <div class="filter-chip" [class.active]="activeFilter() === '2020s'" (click)="selectFilter('2020s')">2020+</div>
-  </div>
-
-  <div class="results-meta" *ngIf="searched() && !loading() && !errorMessage()">
-    {{ results().length }} resultado{{ results().length === 1 ? '' : 's' }} vía Spotify API
-  </div>
-
-  <div class="search-status" *ngIf="loading()">Buscando…</div>
-  <div class="search-status error" *ngIf="!loading() && errorMessage()">{{ errorMessage() }}</div>
-
-  <div class="empty-state" *ngIf="!loading() && !errorMessage() && searched() && results().length === 0">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-      <circle cx="11" cy="11" r="7" />
-      <path d="M21 21l-4.3-4.3" />
-    </svg>
-    <h3>Sin resultados</h3>
-    <p>No encontramos álbumes para "{{ query() }}". Prueba con otro nombre o artista.</p>
-  </div>
-
-  <div class="empty-state" *ngIf="!loading() && !errorMessage() && !searched()">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-      <circle cx="11" cy="11" r="7" />
-      <path d="M21 21l-4.3-4.3" />
-    </svg>
-    <h3>Empieza a escribir</h3>
-    <p>Busca por nombre de álbum, artista o género para ver resultados.</p>
-  </div>
-
-  <div class="results-grid" *ngIf="!loading() && !errorMessage() && results().length > 0">
-    <div class="result-row" *ngFor="let album of results()" (click)="goToAlbum(album)">
-      <img
-        *ngIf="album.coverUrl"
-        class="result-art"
-        [src]="album.coverUrl"
-        [alt]="album.name"
-      />
-      <div *ngIf="!album.coverUrl" class="result-art-placeholder">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(143,156,174,0.3)" stroke-width="1.5">
-          <circle cx="12" cy="12" r="10" />
-          <circle cx="12" cy="12" r="3" />
-        </svg>
-      </div>
-      <div class="result-info">
-        <div class="result-title">{{ album.name }}</div>
-        <div class="result-sub">{{ album.artist }}<ng-container *ngIf="album.releaseYear"> · {{ album.releaseYear }}</ng-container></div>
-      </div>
-      <div class="result-rating">{{ formatRating(album) }}</div>
+    <div class="filter-chip" [class.active]="activeFilter() === 'albums'" (click)="selectFilter('albums')">
+      Álbumes
+    </div>
+    <div class="filter-chip" [class.active]="activeFilter() === 'artists'" (click)="selectFilter('artists')">
+      Artistas emergentes
+    </div>
+    <div class="filter-chip" [class.active]="activeFilter() === 'users'" (click)="selectFilter('users')">
+      Usuarios
     </div>
   </div>
+
+  <!-- ===== ÁLBUMES — GET /api/spotify/search?q=... ===== -->
+  <ng-container *ngIf="activeFilter() === 'albums'">
+    <div class="results-meta" *ngIf="searched() && !loading() && !errorMessage()">
+      {{ albumResults().length }} resultado{{ albumResults().length === 1 ? '' : 's' }} vía Spotify API
+    </div>
+
+    <div class="search-status" *ngIf="loading()">Buscando…</div>
+    <div class="search-status error" *ngIf="!loading() && errorMessage()">{{ errorMessage() }}</div>
+
+    <div class="empty-state" *ngIf="!loading() && !errorMessage() && searched() && albumResults().length === 0">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <circle cx="11" cy="11" r="7" />
+        <path d="M21 21l-4.3-4.3" />
+      </svg>
+      <h3>Sin resultados</h3>
+      <p>No encontramos álbumes para "{{ query() }}". Prueba con otro nombre o artista.</p>
+    </div>
+
+    <div class="empty-state" *ngIf="!loading() && !errorMessage() && !searched()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <circle cx="11" cy="11" r="7" />
+        <path d="M21 21l-4.3-4.3" />
+      </svg>
+      <h3>Empieza a escribir</h3>
+      <p>Busca por nombre de álbum, artista o género para ver resultados.</p>
+    </div>
+
+    <div class="results-grid" *ngIf="!loading() && !errorMessage() && albumResults().length > 0">
+      <div class="result-row" *ngFor="let album of albumResults()" (click)="goToAlbum(album)">
+        <img *ngIf="album.coverUrl" class="result-art" [src]="album.coverUrl" [alt]="album.name" />
+        <div *ngIf="!album.coverUrl" class="result-art-placeholder">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(143,156,174,0.3)" stroke-width="1.5">
+            <circle cx="12" cy="12" r="10" />
+            <circle cx="12" cy="12" r="3" />
+          </svg>
+        </div>
+        <div class="result-info">
+          <div class="result-title">{{ album.name }}</div>
+          <div class="result-sub">{{ album.artist }}<ng-container *ngIf="album.releaseYear"> · {{ album.releaseYear }}</ng-container></div>
+        </div>
+        <div class="result-rating">{{ formatRating(album) }}</div>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- ===== ARTISTAS EMERGENTES — GET /api/artists/discover ===== -->
+  <ng-container *ngIf="activeFilter() === 'artists'">
+    <div class="results-meta" *ngIf="!loading() && !errorMessage()">
+      {{ artistResults().length }} artista{{ artistResults().length === 1 ? '' : 's' }} emergente{{ artistResults().length === 1 ? '' : 's' }}
+    </div>
+
+    <div class="search-status" *ngIf="loading()">Cargando artistas emergentes…</div>
+    <div class="search-status error" *ngIf="!loading() && errorMessage()">{{ errorMessage() }}</div>
+
+    <div class="empty-state" *ngIf="!loading() && !errorMessage() && artistResults().length === 0">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <circle cx="12" cy="8" r="4" />
+        <path d="M4 21c0-4 3.5-7 8-7s8 3 8 7" />
+      </svg>
+      <h3>Sin resultados</h3>
+      <p>
+        No encontramos artistas emergentes<ng-container *ngIf="query()"> para "{{ query() }}"</ng-container>.
+      </p>
+    </div>
+
+    <div class="results-grid" *ngIf="!loading() && !errorMessage() && artistResults().length > 0">
+      <div class="result-row" *ngFor="let artist of artistResults()" (click)="goToArtist(artist)">
+        <img *ngIf="artist.photoUrl" class="result-art artist-avatar" [src]="artist.photoUrl" [alt]="artist.artistName" />
+        <div *ngIf="!artist.photoUrl" class="result-art-placeholder artist-avatar">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(143,156,174,0.3)" stroke-width="1.5">
+            <circle cx="12" cy="8" r="4" />
+            <path d="M4 21c0-4 3.5-7 8-7s8 3 8 7" />
+          </svg>
+        </div>
+        <div class="result-info">
+          <div class="result-title">
+            {{ artist.artistName }}
+            <span class="premium-tag" *ngIf="artist.isPremium">★ Premium</span>
+          </div>
+          <div class="result-sub">{{ artist.genres }}</div>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- ===== USUARIOS — sin endpoint en el contrato v1.0 ===== -->
+  <ng-container *ngIf="activeFilter() === 'users'">
+    <div class="empty-state">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <circle cx="12" cy="8" r="4" />
+        <path d="M4 21c0-4 3.5-7 8-7s8 3 8 7" />
+      </svg>
+      <h3>Próximamente</h3>
+      <p>
+        El contrato de la API todavía no tiene un endpoint para buscar usuarios. Cuando esté
+        disponible, este filtro se conecta igual que los otros.
+      </p>
+    </div>
+  </ng-container>
 </div>

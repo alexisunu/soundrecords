@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { catchError, of } from 'rxjs';
 
 import { NotificationService } from '../../../core/services/notification';
-import { AppNotification, NotificationPreferences, NotificationType } from '../../../core/models/notification.model';
+import { AppNotification, NotificationType } from '../../../core/models/notification.model';
 
 type CategoryFilter = 'all' | 'social' | 'missions' | 'system';
 type Category = 'social' | 'missions' | 'system';
@@ -48,23 +48,6 @@ export class Notifications implements OnInit {
 
   activeTab = signal<CategoryFilter>('all');
   markingAllRead = signal(false);
-
-  // Ver nota en notification.model.ts: no existe GET de preferencias en
-  // el contrato, así que estos valores solo reflejan lo que el usuario
-  // cambie en esta sesión, partiendo de los defaults del mockup.
-  preferences = signal<NotificationPreferences>({
-    likes: true,
-    newFollowers: true,
-    comments: true,
-    mentions: false,
-    missionCompleted: true,
-    newBadges: true,
-    levelUp: true,
-    artistReleases: true,
-    weeklyEmailSummary: true,
-  });
-  savingPrefs = signal(false);
-  prefsError = signal<string | null>(null);
 
   readonly tabs: { key: CategoryFilter; label: string }[] = [
     { key: 'all', label: 'Todas' },
@@ -187,23 +170,6 @@ export class Notifications implements OnInit {
         this.notifications.update((list) => list.map((n) => ({ ...n, isRead: true })));
         this.unreadCount.set(res.unreadCount);
       });
-  }
-
-  togglePreference(key: keyof NotificationPreferences): void {
-    const previous = this.preferences();
-    const next: NotificationPreferences = { ...previous, [key]: !previous[key] };
-    this.preferences.set(next);
-    this.savingPrefs.set(true);
-    this.prefsError.set(null);
-
-    this.notificationService.updatePreferences(next).subscribe({
-      next: () => this.savingPrefs.set(false),
-      error: () => {
-        this.savingPrefs.set(false);
-        this.preferences.set(previous);
-        this.prefsError.set('No pudimos guardar tu preferencia. Intenta de nuevo.');
-      },
-    });
   }
 
   private groupIndex(createdAt: string): number {

@@ -1,0 +1,73 @@
+<!--
+  Vista "Quiénes somos" — informativa, no consume ningún endpoint del
+  contrato. Se monta dentro de MainLayout.
+-->
+<div class="topbar">
+  <div class="topbar-row">
+    <h1>Quiénes somos</h1>
+  </div>
+</div>
+
+<div class="about-hero">
+  <h2>La casa de la música independiente</h2>
+  <!-- TODO: reemplazar por la redacción oficial de la empresa -->
+  <p>
+    SoundRecords nació para conectar a oyentes curiosos con artistas emergentes, y darle a esos
+    artistas herramientas reales para crecer: reseñas de su comunidad, estadísticas de su público
+    y un espacio propio dentro de la plataforma.
+  </p>
+</div>
+
+<div class="about-content">
+  <div class="mission-grid">
+    <div class="mission-card">
+      <div class="mission-icon">🎯</div>
+      <h3>Nuestra misión</h3>
+      <!-- TODO: reemplazar por la redacción oficial -->
+      <p>Darle visibilidad real a artistas que recién empiezan, más allá de los algoritmos de las grandes plataformas.</p>
+    </div>
+    <div class="mission-card">
+      <div class="mission-icon">🌱</div>
+      <h3>Artistas emergentes</h3>
+      <!-- TODO: reemplazar por la redacción oficial -->
+      <p>Cada semana destacamos nuevos talentos en la sección Descubre, priorizando calidad sobre volumen.</p>
+    </div>
+    <div class="mission-card">
+      <div class="mission-icon">🤝</div>
+      <h3>Comunidad primero</h3>
+      <!-- TODO: reemplazar por la redacción oficial -->
+      <p>Las reseñas y calificaciones de la comunidad son el corazón de SoundRecords, no un extra.</p>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="resources-header">
+    <div class="section-title">Recursos para artistas nuevos</div>
+    <p class="resources-subtitle">
+      Enlaces útiles si estás empezando tu carrera musical. No estamos afiliados a estos servicios;
+      son solo referencias que nos parecen valiosas.
+    </p>
+  </div>
+
+  <div class="link-group" *ngFor="let group of linkGroups">
+    <h4 class="link-group-title">{{ group.category }}</h4>
+    <div class="link-list">
+      <a
+        class="resource-link"
+        *ngFor="let link of group.links"
+        [href]="link.url"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <div class="resource-link-main">
+          <div class="resource-link-title">{{ link.title }}</div>
+          <div class="resource-link-desc">{{ link.description }}</div>
+        </div>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M7 17L17 7M7 7h10v10" />
+        </svg>
+      </a>
+    </div>
+  </div>
+</div>

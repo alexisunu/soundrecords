@@ -172,3 +172,14 @@ h1, h2, h3 { font-family: 'Space Grotesk', sans-serif; }
   .profile-header { flex-direction: column; align-items: center; text-align: center; }
   .profile-stats { justify-content: center; }
 }
+
+/* Estados de carga/error para la pestaña "Reseñas" (agregado al
+   conectar GET /api/reviews/user/{userId}). */
+.detail-status {
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  padding: 16px 0;
+}
+.detail-status.error {
+  color: var(--danger);
+}

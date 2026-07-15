@@ -1,8 +1,9 @@
 <!--
   VISTA 17 del mockup (MU_2.html). Se monta dentro de MainLayout, así
   que el sidebar de la app ya viene dado; este componente solo arma el
-  contenido: 1fr (lista) + 300px (rail de preferencias), igual que
-  .notif-layout en el mockup pero sin la columna del sidebar.
+  contenido de notificaciones. Se quitó el rail de preferencias: el
+  contrato no expone un GET para leerlas y el negocio decidió no
+  mostrar esa opción por ahora.
 -->
 <div class="notif-layout">
   <!-- Lista de notificaciones -->
@@ -102,63 +103,5 @@
         <div class="detail-status">No tienes notificaciones por aquí todavía.</div>
       </ng-template>
     </ng-container>
-  </div>
-
-  <!-- Rail de preferencias -->
-  <div class="notif-rail">
-    <div class="rail-title">Preferencias</div>
-    <div class="detail-status error" *ngIf="prefsError()">{{ prefsError() }}</div>
-
-    <div class="pref-group">
-      <h4>Social</h4>
-      <div class="pref-row">
-        <div class="pr-label">Likes a mis reseñas</div>
-        <div class="toggle" [class.on]="preferences().likes" (click)="togglePreference('likes')"></div>
-      </div>
-      <div class="pref-row">
-        <div class="pr-label">Nuevos seguidores</div>
-        <div class="toggle" [class.on]="preferences().newFollowers" (click)="togglePreference('newFollowers')"></div>
-      </div>
-      <div class="pref-row">
-        <div class="pr-label">Comentarios</div>
-        <div class="toggle" [class.on]="preferences().comments" (click)="togglePreference('comments')"></div>
-      </div>
-      <div class="pref-row">
-        <div class="pr-label">Menciones</div>
-        <div class="toggle" [class.on]="preferences().mentions" (click)="togglePreference('mentions')"></div>
-      </div>
-    </div>
-
-    <div class="pref-group">
-      <h4>Misiones y progreso</h4>
-      <div class="pref-row">
-        <div class="pr-label">Misión completada</div>
-        <div class="toggle" [class.on]="preferences().missionCompleted" (click)="togglePreference('missionCompleted')"></div>
-      </div>
-      <div class="pref-row">
-        <div class="pr-label">Nuevas insignias</div>
-        <div class="toggle" [class.on]="preferences().newBadges" (click)="togglePreference('newBadges')"></div>
-      </div>
-      <div class="pref-row">
-        <div class="pr-label">Subida de nivel</div>
-        <div class="toggle" [class.on]="preferences().levelUp" (click)="togglePreference('levelUp')"></div>
-      </div>
-    </div>
-
-    <div class="pref-group">
-      <h4>Lanzamientos</h4>
-      <div class="pref-row">
-        <div class="pr-label">Artistas que sigo</div>
-        <div class="toggle" [class.on]="preferences().artistReleases" (click)="togglePreference('artistReleases')"></div>
-      </div>
-    </div>
-
-    <div class="pref-group">
-      <h4>Email</h4>
-      <div class="pref-row">
-        <div class="pr-label">Resumen semanal</div>
-        <div class="toggle" [class.on]="preferences().weeklyEmailSummary" (click)="togglePreference('weeklyEmailSummary')"></div>
-      </div>
-    </div>
   </div>
 </div>

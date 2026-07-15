@@ -1,0 +1,138 @@
+:host {
+  --bg: #0a1128;
+  --accent: #17d1e8;
+  --accent-2: #9b5de5;
+  --text: #ffffff;
+  --text-secondary: #8f9cae;
+  --card: #131c38;
+  --card-border: rgba(143, 156, 174, 0.14);
+  --accent-glow: rgba(23, 209, 232, 0.25);
+  --danger: #f15f6c;
+  --success: #2ee89a;
+
+  display: block;
+  font-family: 'Inter', sans-serif;
+  color: var(--text);
+}
+
+.topbar {
+  padding: 28px 28px 18px;
+}
+.topbar-row h1 {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.about-hero {
+  background: linear-gradient(180deg, rgba(23, 209, 232, 0.08) 0%, transparent 100%);
+  border-bottom: 1px solid var(--card-border);
+  padding: 32px 28px 28px;
+  max-width: 720px;
+}
+.about-hero h2 {
+  font-size: 26px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+.about-hero p {
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--text-secondary);
+}
+
+.about-content {
+  padding: 28px 28px 60px;
+}
+
+.mission-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 8px;
+}
+.mission-card {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  padding: 20px;
+}
+.mission-icon {
+  font-size: 26px;
+  margin-bottom: 10px;
+}
+.mission-card h3 {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.mission-card p {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+.section-divider {
+  height: 1px;
+  background: var(--card-border);
+  margin: 32px 0 28px;
+}
+
+.section-title {
+  font-size: 17px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.resources-subtitle {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 24px;
+  max-width: 620px;
+}
+
+.link-group {
+  margin-bottom: 24px;
+}
+.link-group-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+.link-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.resource-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 14px;
+  padding: 14px 16px;
+  text-decoration: none;
+  color: var(--text);
+  transition: border-color 0.15s;
+}
+.resource-link:hover {
+  border-color: rgba(23, 209, 232, 0.35);
+}
+.resource-link-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  margin-bottom: 3px;
+}
+.resource-link-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+.resource-link svg {
+  flex-shrink: 0;
+  color: var(--text-secondary);
+}

@@ -33,26 +33,3 @@ export interface MarkAllReadResponse {
   message: string;
   unreadCount: number;
 }
-
-/**
- * ⚠️ El contrato solo expone un PATCH /api/notifications/preferences
- * (no hay GET), así que no hay forma de conocer los valores guardados
- * al cargar la vista. Igual que con el boost de artist-dashboard.ts,
- * partimos de los valores por defecto que muestra el mockup (VISTA 17)
- * y reflejamos ahí la última acción hecha en esta sesión.
- */
-export interface NotificationPreferences {
-  likes: boolean;
-  newFollowers: boolean;
-  comments: boolean;
-  mentions: boolean;
-  missionCompleted: boolean;
-  newBadges: boolean;
-  levelUp: boolean;
-  artistReleases: boolean;
-  weeklyEmailSummary: boolean;
-}
-
-export interface UpdatePreferencesResponse {
-  message: string;
-}

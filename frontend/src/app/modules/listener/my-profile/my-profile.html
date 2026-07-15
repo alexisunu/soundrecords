@@ -19,24 +19,24 @@
     </div>
   </div>
 
-  <div class="profile-content" *ngIf="!loading">
+  <div class="profile-content" *ngIf="!loading()">
     <div class="profile-header">
-      <div class="avatar-xl"></div>
+      <div class="avatar-xl" [style.background-image]="user()?.photoUrl ? 'url(' + user()?.photoUrl + ')' : null"></div>
       <div class="profile-info">
-        <h2>{{ user?.username || 'Invitado' }}</h2>
-        <div class="profile-bio">{{ user?.bio || 'Todavía no has agregado una biografía.' }}</div>
+        <h2>{{ user()?.username || 'Invitado' }}</h2>
+        <div class="profile-bio">{{ user()?.bio || 'Todavía no has agregado una biografía.' }}</div>
 
         <div class="profile-stats">
-          <div class="stat-item"><div class="stat-num">{{ stats.reviews }}</div><div class="stat-label">Reseñas</div></div>
-          <div class="stat-item"><div class="stat-num">{{ stats.followers }}</div><div class="stat-label">Seguidores</div></div>
-          <div class="stat-item"><div class="stat-num">{{ stats.following }}</div><div class="stat-label">Siguiendo</div></div>
-          <div class="stat-item"><div class="stat-num">{{ stats.rating }}</div><div class="stat-label">Rating prom.</div></div>
+          <div class="stat-item"><div class="stat-num">{{ stats().reviews }}</div><div class="stat-label">Reseñas</div></div>
+          <div class="stat-item"><div class="stat-num">{{ stats().followers }}</div><div class="stat-label">Seguidores</div></div>
+          <div class="stat-item"><div class="stat-num">{{ stats().following }}</div><div class="stat-label">Siguiendo</div></div>
+          <div class="stat-item"><div class="stat-num">{{ stats().rating }}</div><div class="stat-label">Rating prom.</div></div>
         </div>
 
         <div class="level-badge">
-          <span class="lv">Nivel {{ user?.level || '-' }}</span>
-          <div class="level-bar-wrap"><div class="level-bar" [style.width.%]="levelProgressPercent"></div></div>
-          <span class="pts">{{ user?.points || 0 }} / {{ user?.nextLevel || 0 }} pts</span>
+          <span class="lv">Nivel {{ user()?.level || '-' }}</span>
+          <div class="level-bar-wrap"><div class="level-bar" [style.width.%]="levelProgressPercent()"></div></div>
+          <span class="pts">{{ user()?.points || 0 }} pts</span>
         </div>
       </div>
     </div>
@@ -49,50 +49,56 @@
     </div>
 
     <div class="profile-tabs">
-      <div class="profile-tab" [class.active]="selectedTab === 'reviews'" (click)="selectTab('reviews')">Reseñas</div>
-      <div class="profile-tab" [class.active]="selectedTab === 'lists'" (click)="selectTab('lists')">Listas</div>
-      <div class="profile-tab" [class.active]="selectedTab === 'likes'" (click)="selectTab('likes')">Me gustaron</div>
+      <div class="profile-tab" [class.active]="selectedTab() === 'reviews'" (click)="selectTab('reviews')">Reseñas</div>
+      <div class="profile-tab" [class.active]="selectedTab() === 'lists'" (click)="selectTab('lists')">Listas</div>
+      <div class="profile-tab" [class.active]="selectedTab() === 'likes'" (click)="selectTab('likes')">Me gustaron</div>
     </div>
 
-    <div *ngIf="selectedTab === 'reviews'" style="display:flex;flex-direction:column;gap:14px;">
-      <div class="review-card" *ngFor="let review of reviews">
-        <div class="review-head">
-          <div class="avatar-sm"></div>
-          <div class="meta">
-            <div class="uname">{{ user?.username }}</div>
-            <div class="when">{{ review.createdAt }}</div>
-          </div>
-        </div>
-        <div class="review-body">
-          <div class="album-art-wrap">
-            <div class="vinyl-peek"></div>
-            <div class="album-art-placeholder">
-              <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="rgba(143,156,174,0.3)" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
-            </div>
-          </div>
-          <div class="review-content">
-            <div class="album-title">{{ review.album.name }}</div>
-            <div class="album-artist">{{ review.album.artist }} · {{ review.album.year }}</div>
-            <div class="stars">
-              <svg *ngFor="let star of [1,2,3,4,5]" [class]="star <= review.rating ? 'star-on' : 'star-off'" viewBox="0 0 24 24">
-                <path d="M12 2l3 6.5 7 .8-5.2 4.9 1.4 7-6.2-3.6-6.2 3.6 1.4-7L2 9.3l7-.8z"/>
-              </svg>
-            </div>
-            <p class="review-text">{{ review.content }}</p>
-          </div>
-        </div>
-      </div>
+    <div *ngIf="selectedTab() === 'reviews'" style="display:flex;flex-direction:column;gap:14px;">
+      <div class="detail-status" *ngIf="loadingReviews()">Cargando tus reseñas…</div>
+      <div class="detail-status error" *ngIf="!loadingReviews() && reviewsError()">{{ reviewsError() }}</div>
 
-      <div class="empty-state" *ngIf="reviews.length === 0">
-        <h3>Todavía no has escrito reseñas</h3>
-      </div>
+      <ng-container *ngIf="!loadingReviews() && !reviewsError()">
+        <div class="review-card" *ngFor="let review of reviews()">
+          <div class="review-head">
+            <div class="avatar-sm" [style.background-image]="user()?.photoUrl ? 'url(' + user()?.photoUrl + ')' : null"></div>
+            <div class="meta">
+              <div class="uname">{{ user()?.username }}</div>
+              <div class="when">{{ review.createdAt | date: 'mediumDate' }}</div>
+            </div>
+          </div>
+          <div class="review-body">
+            <div class="album-art-wrap">
+              <div class="vinyl-peek"></div>
+              <img *ngIf="review.coverUrl" class="album-art" [src]="review.coverUrl" [alt]="review.albumName" />
+              <div *ngIf="!review.coverUrl" class="album-art-placeholder">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="rgba(143,156,174,0.3)" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+              </div>
+            </div>
+            <div class="review-content">
+              <div class="album-title">{{ review.albumName }}</div>
+              <div class="album-artist">{{ review.artistName }}</div>
+              <div class="stars">
+                <svg *ngFor="let star of [1,2,3,4,5]" [class]="star <= review.rating ? 'star-on' : 'star-off'" viewBox="0 0 24 24">
+                  <path d="M12 2l3 6.5 7 .8-5.2 4.9 1.4 7-6.2-3.6-6.2 3.6 1.4-7L2 9.3l7-.8z" />
+                </svg>
+              </div>
+              <p class="review-text">{{ review.content }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="empty-state" *ngIf="reviews().length === 0">
+          <h3>Todavía no has escrito reseñas</h3>
+        </div>
+      </ng-container>
     </div>
 
-    <div *ngIf="selectedTab === 'lists'" class="empty-state">
+    <div *ngIf="selectedTab() === 'lists'" class="empty-state">
       <h3>No hay listas todavía</h3>
     </div>
 
-    <div *ngIf="selectedTab === 'likes'" class="empty-state">
+    <div *ngIf="selectedTab() === 'likes'" class="empty-state">
       <h3>No hay álbumes favoritos</h3>
     </div>
   </div>

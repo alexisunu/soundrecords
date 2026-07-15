@@ -2,10 +2,11 @@ import { Component, OnInit, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { forkJoin } from 'rxjs';
 import { AlbumService } from '../../../core/services/album';
 import { ReviewService } from '../../../core/services/review';
 import { AlbumDetail } from '../../../core/models/album.model';
-import { MissionCompletedInfo } from '../../../core/models/review.model';
+import { MissionCompletedInfo, Review } from '../../../core/models/review.model';
 
 const MIN_CONTENT = 50;
 const MAX_CONTENT = 2000;
@@ -25,6 +26,16 @@ export class ReviewEditor implements OnInit {
   loadingAlbum = signal(true);
   albumError = signal<string | null>(null);
 
+  // ⚠️ FIX: antes se usaba `album().myReview` (que viene del endpoint
+  // de Spotify/álbum) como fuente de verdad de "¿ya reseñé esto?". La
+  // fuente correcta según el contrato es GET /api/reviews/album/{id}
+  // (AlbumReviewsResponse.myReview), que es lo mismo que ya usa
+  // album-detail.ts para pintar el botón "Editar mi reseña". Si
+  // seguíamos usando el otro campo, un usuario podía intentar crear
+  // una segunda reseña para el mismo álbum y chocar con el 409 del
+  // backend en vez de caer directo en modo edición.
+  myReview = signal<Review | null>(null);
+
   rating = signal(0);
   content = signal('');
 
@@ -36,9 +47,9 @@ export class ReviewEditor implements OnInit {
   readonly minContent = MIN_CONTENT;
   readonly maxContent = MAX_CONTENT;
 
-  // true si el usuario ya tenía una reseña para este álbum (myReview
-  // != null): en ese caso el submit hace PUT en vez de POST.
-  isEditMode = computed(() => !!this.album()?.myReview);
+  // true si el usuario ya tenía una reseña para este álbum: en ese
+  // caso el submit hace PUT en vez de POST.
+  isEditMode = computed(() => !!this.myReview());
 
   charCount = computed(() => this.content().length);
 
@@ -88,17 +99,26 @@ export class ReviewEditor implements OnInit {
     this.loadingAlbum.set(true);
     this.albumError.set(null);
 
-    this.albumService.getById(id).subscribe({
-      next: (album) => {
+    // Pedimos en paralelo los datos del álbum (nombre/artista/carátula,
+    // vía SpotifyController) y la reseña propia -si existe- (vía
+    // ReviewController, que es la fuente de verdad para myReview).
+    forkJoin({
+      album: this.albumService.getById(id),
+      albumReviews: this.reviewService.getAlbumReviews(id),
+    }).subscribe({
+      next: ({ album, albumReviews }) => {
         this.album.set(album);
         this.loadingAlbum.set(false);
+
+        const myReview = albumReviews.myReview ?? null;
+        this.myReview.set(myReview);
 
         // Si ya existe una reseña mía, precargamos el formulario en
         // modo edición para no chocar con el 409 del contrato
         // ("ya existe reseña del usuario para ese álbum").
-        if (album.myReview) {
-          this.rating.set(album.myReview.rating ?? 0);
-          this.content.set(album.myReview.content ?? '');
+        if (myReview) {
+          this.rating.set(myReview.rating ?? 0);
+          this.content.set(myReview.content ?? '');
         }
       },
       error: (err) => {
@@ -128,8 +148,9 @@ export class ReviewEditor implements OnInit {
     this.submitting.set(true);
     this.submitError.set(null);
 
-    if (this.isEditMode() && album.myReview) {
-      this.reviewService.update(album.myReview.id, { rating: this.rating(), content: this.content() }).subscribe({
+    const myReview = this.myReview();
+    if (this.isEditMode() && myReview) {
+      this.reviewService.update(myReview.id, { rating: this.rating(), content: this.content() }).subscribe({
         next: () => {
           this.submitting.set(false);
           this.justPublished.set(true);
