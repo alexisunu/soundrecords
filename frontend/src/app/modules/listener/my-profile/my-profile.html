@@ -24,13 +24,16 @@
       <div class="avatar-xl" [style.background-image]="user()?.photoUrl ? 'url(' + user()?.photoUrl + ')' : null"></div>
       <div class="profile-info">
         <h2>{{ user()?.username || 'Invitado' }}</h2>
-        <div class="profile-bio">{{ user()?.bio || 'Todavía no has agregado una biografía.' }}</div>
+        <div class="profile-bio">{{ bio() || 'Todavía no has agregado una biografía.' }}</div>
 
         <div class="profile-stats">
           <div class="stat-item"><div class="stat-num">{{ stats().reviews }}</div><div class="stat-label">Reseñas</div></div>
           <div class="stat-item"><div class="stat-num">{{ stats().followers }}</div><div class="stat-label">Seguidores</div></div>
           <div class="stat-item"><div class="stat-num">{{ stats().following }}</div><div class="stat-label">Siguiendo</div></div>
           <div class="stat-item"><div class="stat-num">{{ stats().rating }}</div><div class="stat-label">Rating prom.</div></div>
+        </div>
+        <div class="stats-error" *ngIf="statsError()">
+          {{ statsError() }} <a (click)="retryStats()">Reintentar</a>
         </div>
 
         <div class="level-badge">
@@ -41,9 +44,19 @@
       </div>
     </div>
 
-    <div class="badges-row">
-      <div class="badge-item" *ngFor="let badge of badges">
-        <div class="badge-icon">{{ badge.icon }}</div>
+    <div class="badges-row" *ngIf="loadingBadges()">
+      <div class="badge-item skeleton" *ngFor="let n of [1,2,3,4]"></div>
+    </div>
+    <div class="badges-status error" *ngIf="!loadingBadges() && badgesError()">{{ badgesError() }}</div>
+    <div class="badges-status" *ngIf="!loadingBadges() && !badgesError() && badges().length === 0">
+      Todavía no has canjeado insignias. Visita la <a routerLink="/gamification/badge-store">Tienda de Insignias</a>.
+    </div>
+    <div class="badges-row" *ngIf="!loadingBadges() && !badgesError() && badges().length > 0">
+      <div class="badge-item" *ngFor="let badge of badges()">
+        <div class="badge-icon">
+          <img *ngIf="badge.imageUrl" [src]="badge.imageUrl" [alt]="badge.name" />
+          <span *ngIf="!badge.imageUrl">🏅</span>
+        </div>
         <div class="badge-name">{{ badge.name }}</div>
       </div>
     </div>

@@ -63,9 +63,9 @@
          llega a exponerlo, se agrega aquí. -->
 
     <!-- Misiones diarias -->
-    <div class="section-title" *ngIf="m.dailyMissions.length">Misiones diarias</div>
-    <div class="missions-grid" *ngIf="m.dailyMissions.length">
-      <div class="mission-card" *ngFor="let mission of m.dailyMissions" [class.completed]="mission.completed">
+    <div class="section-title" *ngIf="dailyMissions().length">Misiones diarias</div>
+    <div class="missions-grid" *ngIf="dailyMissions().length">
+      <div class="mission-card" *ngFor="let mission of dailyMissions()" [class.completed]="mission.completed">
         <div class="mission-card-head">
           <div class="mission-card-icon" [class.green]="mission.completed">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -103,9 +103,9 @@
     </div>
 
     <!-- Misiones de logro -->
-    <div class="section-title" *ngIf="m.achievementMissions.length">Logros</div>
-    <div class="missions-grid" *ngIf="m.achievementMissions.length">
-      <div class="mission-card" *ngFor="let mission of m.achievementMissions" [class.completed]="mission.completed">
+    <div class="section-title" *ngIf="achievementMissions().length">Logros</div>
+    <div class="missions-grid" *ngIf="achievementMissions().length">
+      <div class="mission-card" *ngFor="let mission of achievementMissions()" [class.completed]="mission.completed">
         <div class="mission-card-head">
           <div class="mission-card-icon purple" [class.green]="mission.completed">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -144,7 +144,7 @@
       </div>
     </div>
 
-    <div class="page-status" *ngIf="!m.dailyMissions.length && !m.achievementMissions.length">
+    <div class="page-status" *ngIf="!dailyMissions().length && !achievementMissions().length">
       No tienes misiones activas por ahora.
     </div>
 

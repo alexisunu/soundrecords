@@ -1,3 +1,4 @@
+
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth-guard';
 
@@ -73,12 +74,6 @@ export const routes: Routes = [
           import('./modules/gamification/badge-store/badge-store').then((m) => m.BadgeStore),
       },
       {
-        path: 'listener/early-access',
-        //canActivate: [authGuard],
-        loadComponent: () =>
-          import('./modules/listener/early-acces/early-access').then((m) => m.EarlyAccess),
-      },
-      {
         path: 'listener/album-search',
         //canActivate: [authGuard],
         loadComponent: () =>
@@ -133,12 +128,20 @@ export const routes: Routes = [
           import('./modules/artist/artist-public/artist-public').then((m) => m.ArtistPublic),
       },
 
-      // Quiénes somos + recursos curados para artistas nuevos (vista
-      // puramente informativa, no consume ningún endpoint del contrato).
+      // Quiénes somos (vista puramente informativa, no consume ningún
+      // endpoint del contrato).
       {
         path: 'about',
         loadComponent: () =>
           import('./modules/info/about/about').then((m) => m.About),
+      },
+
+      // Recursos curados para artistas nuevos (vista puramente
+      // informativa, no consume ningún endpoint del contrato).
+      {
+        path: 'resources',
+        loadComponent: () =>
+          import('./modules/info/resources/resources').then((m) => m.Resources),
       },
 
       // alias usado en el sidebar (routerLink="/home") -> apunta al feed del listener

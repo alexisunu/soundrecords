@@ -73,10 +73,12 @@
 
   <!-- Rail: contenido de referencia visual del mockup. -->
   <aside class="rail">
-    <div class="rail-card event-banner">
-      <h3>Eventos de SoundRecords</h3>
-      <p>Entérate de los próximos eventos, lanzamientos y actividades especiales de la plataforma.</p>
-      <a class="cta">Ver eventos</a>
-    </div>
+    <a class="promo-banner" [routerLink]="promoLink">
+      <img [src]="promoImageSrc" alt="Rock al Parque Virtual - SoundRecords" />
+    </a>
+
+    <a class="promo-banner" [routerLink]="promoLink2">
+      <img [src]="promoImageSrc2" alt="Festival Estéreo Picnic - SoundRecords" />
+    </a>
   </aside>
 </div>

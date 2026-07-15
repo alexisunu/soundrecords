@@ -1,3 +1,4 @@
+
 :host {
   --bg: #0a1128;
   --accent: #17d1e8;
@@ -82,7 +83,7 @@
   font-weight: 700;
   margin-bottom: 6px;
 }
-.resources-subtitle {
+.stats-subtitle {
   font-size: 13px;
   color: var(--text-secondary);
   line-height: 1.6;
@@ -90,49 +91,61 @@
   max-width: 620px;
 }
 
-.link-group {
-  margin-bottom: 24px;
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
 }
-.link-group-title {
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
+.stat-card {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  padding: 22px 20px;
+  text-align: center;
+}
+.stat-icon {
+  font-size: 22px;
+  margin-bottom: 10px;
+}
+.stat-value {
+  font-size: 24px;
+  font-weight: 800;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  margin-bottom: 4px;
+}
+.stat-label {
+  font-size: 12.5px;
   color: var(--text-secondary);
-  margin-bottom: 12px;
 }
-.link-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.resource-link {
+
+.resources-cta {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
+  gap: 20px;
+  flex-wrap: wrap;
   background: var(--card);
   border: 1px solid var(--card-border);
-  border-radius: 14px;
-  padding: 14px 16px;
-  text-decoration: none;
-  color: var(--text);
-  transition: border-color 0.15s;
+  border-radius: 16px;
+  padding: 22px 24px;
 }
-.resource-link:hover {
-  border-color: rgba(23, 209, 232, 0.35);
+.resources-cta .stats-subtitle {
+  margin-bottom: 0;
 }
-.resource-link-title {
+.resources-cta-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  color: #06111f;
   font-size: 13.5px;
   font-weight: 700;
-  margin-bottom: 3px;
-}
-.resource-link-desc {
-  font-size: 12px;
-  color: var(--text-secondary);
-  line-height: 1.5;
-}
-.resource-link svg {
-  flex-shrink: 0;
-  color: var(--text-secondary);
+  text-decoration: none;
+  padding: 11px 18px;
+  border-radius: 12px;
+  white-space: nowrap;
 }

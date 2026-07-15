@@ -54,11 +54,29 @@
   </ng-container>
 
   <ng-container *ngIf="!selectedGenre()">
-    <div class="section-title">Trending esta semana</div>
-    <div class="explore-status">
-      Todavía no hay un endpoint de "trending" en el contrato de la API (algo como
-      <code>GET /api/spotify/trending</code>). Cuando Alexis lo agregue, esta sección se conecta
-      igual que los géneros de arriba. Por ahora, elige un género para ver álbumes reales.
+    <div class="section-title">Descubre antes que todos</div>
+
+    <div class="explore-status" *ngIf="loadingArtists()">Cargando artistas emergentes…</div>
+    <div class="explore-status error" *ngIf="!loadingArtists() && errorArtists()">{{ errorArtists() }}</div>
+    <div class="explore-status" *ngIf="!loadingArtists() && !errorArtists() && emergingArtists().length === 0">
+      Todavía no hay artistas para descubrir.
+    </div>
+
+    <div class="trending-albums" *ngIf="!loadingArtists() && !errorArtists() && emergingArtists().length > 0">
+      <div class="trending-album-card" *ngFor="let artist of emergingArtists()" (click)="goToArtist(artist)">
+        <img *ngIf="artist.photoUrl" class="t-art artist-photo" [src]="artist.photoUrl" [alt]="artist.artistName" />
+        <div *ngIf="!artist.photoUrl" class="t-art-placeholder artist-photo">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="rgba(143,156,174,0.3)" stroke-width="1.5">
+            <circle cx="12" cy="8" r="4" />
+            <path d="M4 21c0-4 3.5-7 8-7s8 3 8 7" />
+          </svg>
+        </div>
+        <div class="t-title">
+          {{ artist.artistName }}
+          <span class="premium-badge" *ngIf="artist.isPremium">★ Premium</span>
+        </div>
+        <div class="t-artist">{{ artist.genres }}</div>
+      </div>
     </div>
   </ng-container>
 </div>

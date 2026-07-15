@@ -1,72 +1,45 @@
+
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
 
-interface CuratedLink {
-  title: string;
-  description: string;
-  url: string;
-}
-
-interface CuratedLinkGroup {
-  category: string;
-  links: CuratedLink[];
+interface PlatformStat {
+  icon: string;
+  value: string;
+  label: string;
 }
 
 /**
  * Vista puramente informativa/estática (no consume ningún endpoint del
- * API Contract). Pensada para que un artista nuevo que se registra
- * entienda qué es SoundRecords y encuentre, en un solo lugar, enlaces
- * de interés para arrancar (distribución, derechos de autor, etc.).
+ * API Contract). Cuenta quiénes somos, nuestra misión y estadísticas
+ * destacadas de la plataforma.
  *
- * ⚠️ TODO para el equipo: el texto de "Quiénes somos" y los links de
- * abajo son un punto de partida de ejemplo -- hay que reemplazarlos por
- * la redacción real de la empresa y por los recursos/alianzas que de
- * verdad quieran recomendar (algunos son genéricos/regionales y deben
- * validarse antes de publicar).
+ * Los recursos curados para artistas nuevos (distribución, derechos de
+ * autor, comunidad) viven ahora en su propia vista: ver
+ * modules/info/resources.
+ *
+ * ⚠️ TODO para el equipo: el texto de "Quiénes somos" es un punto de
+ * partida de ejemplo -- hay que reemplazarlo por la redacción real de
+ * la empresa.
+ *
+ * ⚠️ TODO backend: el API Contract actual no define un endpoint de
+ * estadísticas globales de la plataforma (tipo GET /api/platform/stats).
+ * Mientras no exista, estos números quedan hardcodeados como referencia
+ * visual; hay que reemplazarlos por datos reales o conectar un endpoint
+ * nuevo cuando esté disponible.
  */
 @Component({
   selector: 'app-about',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterModule],
   templateUrl: './about.html',
   styleUrl: './about.scss',
 })
 export class About {
-  linkGroups: CuratedLinkGroup[] = [
-    {
-      category: 'Distribución digital',
-      links: [
-        {
-          title: 'Spotify for Artists',
-          description: 'Reclama tu perfil de artista en Spotify y accede a estadísticas de escucha.',
-          url: 'https://artists.spotify.com/',
-        },
-        {
-          title: 'DistroKid',
-          description: 'Sube tu música a Spotify, Apple Music y otras plataformas.',
-          url: 'https://distrokid.com/',
-        },
-      ],
-    },
-    {
-      category: 'Derechos de autor y regalías',
-      links: [
-        {
-          title: 'SGAE',
-          description: 'Sociedad general de autores y editores — registro y gestión de derechos.',
-          url: 'https://www.sgae.es/',
-        },
-      ],
-    },
-    {
-      category: 'Comunidad y aprendizaje',
-      links: [
-        {
-          title: 'Reddit r/WeAreTheMusicMakers',
-          description: 'Comunidad activa de músicos independientes compartiendo consejos y feedback.',
-          url: 'https://www.reddit.com/r/WeAreTheMusicMakers/',
-        },
-      ],
-    },
+  stats: PlatformStat[] = [
+    { icon: '🎤', value: '1,200+', label: 'Artistas independientes' },
+    { icon: '💿', value: '8,500+', label: 'Álbumes reseñados' },
+    { icon: '📝', value: '32,000+', label: 'Reseñas de la comunidad' },
+    { icon: '⭐', value: '4.6/5', label: 'Calificación promedio' },
   ];
 }

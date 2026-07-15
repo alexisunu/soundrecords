@@ -25,6 +25,19 @@ export class Missions implements OnInit {
   loadingBadges = signal(true);
   errorBadges = signal<string | null>(null);
 
+  // La lista de misiones viene entera del backend (GET /api/missions/me),
+  // no hay forma de "desactivarla" desde el contrato. Se pidió quitar
+  // "Explora un género nuevo" de la vista sin depender de que el
+  // backend la borre de la BD, así que se filtra acá por nombre.
+  private readonly hiddenMissionNames = ['explora un género nuevo'];
+
+  dailyMissions = computed(() => this.filterHidden(this.me()?.dailyMissions ?? []));
+  achievementMissions = computed(() => this.filterHidden(this.me()?.achievementMissions ?? []));
+
+  private filterHidden<T extends { name: string }>(missions: T[]): T[] {
+    return missions.filter((m) => !this.hiddenMissionNames.includes(m.name.trim().toLowerCase()));
+  }
+
   readonly ringCircumference = RING_CIRCUMFERENCE;
 
   // ⚠️ El contrato NO da un total fijo de XP por nivel, solo "points"

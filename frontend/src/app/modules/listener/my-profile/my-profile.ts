@@ -2,11 +2,14 @@ import { Component, OnInit, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { catchError, of } from 'rxjs';
+import { timeout } from 'rxjs/operators';
 import { AuthService } from '../../../core/services/auth';
 import { UserService } from '../../../core/services/user';
 import { ReviewService } from '../../../core/services/review';
+import { MissionService } from '../../../core/services/mission';
 import { User } from '../../../core/models/user.model';
 import { Review } from '../../../core/models/review.model';
+import { Badge } from '../../../core/models/mission.model';
 
 interface ProfileStats {
   reviews: number;
@@ -40,13 +43,24 @@ export class MyProfileComponent implements OnInit {
     following: 0,
     rating: 0,
   });
+  statsError = signal<string | null>(null);
 
-  badges = [
-    { icon: '🎵', name: 'Primera Reseña' },
-    { icon: '🔥', name: '50 Reseñas' },
-    { icon: '❤️', name: '100 Likes' },
-    { icon: '🎯', name: 'Crítica Precisa' },
-  ];
+  // ⚠️ FIX: la bio se leía de user()?.bio, pero GET /api/auth/me (fuente
+  // de AuthService.currentUser$) NO devuelve el campo `bio` según el
+  // contrato v1.0 (solo id/username/email/role/isPremium/points/level/
+  // photoUrl/spotifyLinked) — por eso nunca se veía, ni recién editada.
+  // El único endpoint que sí trae bio es GET /api/users/{id} (perfil
+  // público), el mismo que ya usábamos para followers/following/reviews.
+  bio = signal<string | null>(null);
+
+  // Insignias que el usuario ya compró/desbloqueó. El contrato no tiene
+  // un endpoint dedicado tipo "GET /api/missions/badges/me": la única
+  // fuente es GET /api/missions/badges/store (la misma que usa la
+  // tienda), que trae TODAS las insignias con un flag `owned` por cada
+  // una. Aquí solo nos quedamos con las que owned === true.
+  badges = signal<Badge[]>([]);
+  loadingBadges = signal(true);
+  badgesError = signal<string | null>(null);
 
   reviews = signal<Review[]>([]);
   loadingReviews = signal(false);
@@ -66,6 +80,7 @@ export class MyProfileComponent implements OnInit {
     private authService: AuthService,
     private userService: UserService,
     private reviewService: ReviewService,
+    private missionService: MissionService,
   ) {}
 
   ngOnInit(): void {
@@ -83,18 +98,47 @@ export class MyProfileComponent implements OnInit {
         this.loading.set(false);
       },
     });
+
+    this.loadBadges();
+  }
+
+  private loadBadges(): void {
+    this.loadingBadges.set(true);
+    this.badgesError.set(null);
+
+    this.missionService
+      .getBadgesStore()
+      .pipe(
+        catchError(() => {
+          this.badgesError.set('No pudimos cargar tus insignias.');
+          return of(null);
+        }),
+      )
+      .subscribe((res) => {
+        this.loadingBadges.set(false);
+        this.badges.set(res ? res.badges.filter((b) => b.owned) : []);
+      });
   }
 
   private loadStats(userId: string): void {
     // El endpoint /api/auth/me no trae followersCount/followingCount/
-    // reviewsCount, así que pedimos el perfil público del propio
-    // usuario (GET /api/users/{id}) para completar las estadísticas
-    // mostradas en la cabecera.
+    // reviewsCount/bio, así que pedimos el perfil público del propio
+    // usuario (GET /api/users/{id}) para completar la cabecera. Antes
+    // esta llamada fallaba en silencio (sin timeout ni mensaje visible),
+    // así que si el backend tardaba o daba error las stats se quedaban
+    // en 0 sin que se notara por qué ("a veces no muestra estadísticas").
+    this.statsError.set(null);
+
     this.userService
       .getPublicProfile(userId)
       .pipe(
-        catchError(() => {
-          // Si falla, se mantienen las estadísticas en 0 sin romper la vista.
+        timeout(8000),
+        catchError((err) => {
+          this.statsError.set(
+            err?.name === 'TimeoutError'
+              ? 'La carga está tardando demasiado.'
+              : 'No pudimos cargar tus estadísticas.',
+          );
           return of(null);
         }),
       )
@@ -106,7 +150,13 @@ export class MyProfileComponent implements OnInit {
           following: profile.followingCount,
           rating: this.stats().rating, // no viene en este endpoint; se deja como estaba
         });
+        this.bio.set(profile.bio ?? null);
       });
+  }
+
+  retryStats(): void {
+    const userId = this.user()?.id;
+    if (userId) this.loadStats(userId);
   }
 
   private loadReviews(userId: string): void {
