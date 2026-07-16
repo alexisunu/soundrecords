@@ -1,4 +1,3 @@
-
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -16,6 +15,11 @@ export class LoginComponent implements OnInit {
   loginForm!: FormGroup;
   loading = false;
   errorMessage = '';
+
+  // Popup "¿Quieres ser artista?" — se muestra tras un login exitoso
+  // solo si el usuario todavía es LISTENER (no tiene sentido ofrecérselo
+  // a quien ya es ARTIST o ADMIN).
+  showArtistPopup = false;
 
   constructor(
     private fb: FormBuilder,
@@ -48,14 +52,29 @@ export class LoginComponent implements OnInit {
     this.errorMessage = '';
 
     this.authService.login(this.loginForm.value).subscribe({
-      next: () => {
+      next: (res) => {
         this.loading = false;
-        this.router.navigate(['/listener/feed']);
+
+        if (res.user.role === 'LISTENER') {
+          this.showArtistPopup = true;
+        } else {
+          this.router.navigate(['/listener/feed']);
+        }
       },
       error: (err) => {
         this.loading = false;
         this.errorMessage = err.error?.message || 'Credenciales incorrectas. Inténtalo de nuevo.';
       },
     });
+  }
+
+  onAcceptArtistPopup(): void {
+    this.showArtistPopup = false;
+    this.router.navigate(['/plans']);
+  }
+
+  onDismissArtistPopup(): void {
+    this.showArtistPopup = false;
+    this.router.navigate(['/listener/feed']);
   }
 }
