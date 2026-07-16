@@ -1,3 +1,4 @@
+
 :host {
   --bg: #0a1128;
   --accent: #17d1e8;
@@ -165,6 +166,21 @@ h1, h2, h3 { font-family: 'Space Grotesk', sans-serif; }
   transition: transform .35s ease;
 }
 .review-card:hover .vinyl-peek { transform: translateX(-10px) rotate(35deg); }
+/* ⚠️ FIX: faltaba esta regla. El <img class="album-art"> no tenía
+   ancho/alto ni object-fit, así que se pintaba a su tamaño natural
+   (las portadas de Spotify suelen venir en 640x640 o más) y rompía
+   todo el layout de la tarjeta. Ahora encaja exactamente en el mismo
+   espacio de 88x88 que ya reservaba .album-art-wrap, igual que el
+   placeholder de abajo. */
+.album-art {
+  position: relative;
+  z-index: 2;
+  width: 88px;
+  height: 88px;
+  border-radius: 10px;
+  object-fit: cover;
+  display: block;
+}
 .album-art-placeholder {
   width: 88px;
   height: 88px;
