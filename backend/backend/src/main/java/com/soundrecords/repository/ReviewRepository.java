@@ -11,6 +11,7 @@ import java.util.UUID;
 
 @Repository
 public interface ReviewRepository extends JpaRepository<Review, UUID> {
+    Integer countByUserId(UUID userId);
 
     // Para el detalle de álbum — rating promedio
     @Query("SELECT AVG(r.rating) FROM Review r WHERE r.spotifyAlbumId = :spotifyAlbumId")
@@ -34,4 +35,11 @@ public interface ReviewRepository extends JpaRepository<Review, UUID> {
         ORDER BY r.createdAt DESC
     """)
     List<Review> findFeedByUserId(UUID userId);
+
+    List<Review> findByUserIdOrderByCreatedAtDesc(UUID userId);
+
+    @Query("SELECT AVG(r.rating) FROM Review r WHERE r.user.id = :userId")
+    Double findAverageRatingByUserId(UUID userId);
+
+    List<Review> findAllByOrderByCreatedAtDesc();
 }

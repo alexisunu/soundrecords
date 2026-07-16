@@ -36,7 +36,7 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         JwtFilter jwtFilter = new JwtFilter(jwtUtil, userDetailsService);
         http
-            .cors(Customizer.withDefaults())
+            .cors(Customizer.withDefaults()) 
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -48,7 +48,11 @@ public class SecurityConfig {
                     "/api/auth/me",
                     "/api/spotify/albums/**",
                     "/api/spotify/search/**",
-                    "/api/reviews/**"
+                    "/api/spotify/trending",
+                    "/api/reviews/**",
+                    "/api/artists/discover",
+                    "/api/artists/**",
+                    "/api/payments/plans"  
                 ).permitAll()
                 // Todo lo demás requiere token válido
                 .anyRequest().authenticated()
@@ -75,7 +79,7 @@ public class SecurityConfig {
         // Cambia esto si tu Angular corre en otro puerto
         configuration.setAllowedOrigins(List.of("http://localhost:4200")); 
         // ¡El método OPTIONS es vital aquí!
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS","PATCH"));
         // Permite que pasen los headers de Authorization (tu JWT) y Content-Type
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
         configuration.setAllowCredentials(true);

@@ -26,4 +26,7 @@ public class Mission {
 
     @Column(name = "reward_points", nullable = false)
     private Integer rewardPoints;
+    
+    @Column(name = "mission_key", unique = true)
+    private String missionKey;
 }
